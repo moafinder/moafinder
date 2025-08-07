@@ -111,3 +111,19 @@ img {
   height: auto;
   display: block;
 }
+
+/* HERE CLOUDE */
+/* Grüne Hauptfarbe aus dem Design */
+:root {
+  --primary-green: #7CB92C;
+  --primary-green-dark: #5a8b20;
+}
+
+/* Hover-Effekte für Links */
+.hover-underline-black {
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+.hover-underline-black:hover {
+  border-bottom-color: #000000;
+}

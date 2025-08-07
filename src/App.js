@@ -14,6 +14,9 @@ import ContactPage from './pages/ContactPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FormatsPage from './pages/FormatsPage';
+import EventDetailPage from './pages/EventDetailPage';
+
+
 
 /**
  * Main application component. Defines high‑level layout and routes.
@@ -37,6 +40,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/formats" element={<FormatsPage />} />
+          <Route path="/formate" element={<FormatsPage />} />
+<Route path="/event/:id" element={<EventDetailPage />} />
           <Route
             path="*"
             element={
