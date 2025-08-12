@@ -1,48 +1,35 @@
-/*
-  Global styles for the MoaFinder application.
-
-  This project leverages Tailwind CSS classes for most styling. The
-  `@tailwind` directives import Tailwind's preflight (base reset),
-  component and utility layers. To use Tailwind in your own setup you
-  need to install tailwindcss and configure a build process (e.g. via
-  PostCSS). See https://tailwindcss.com/docs/guides/create-react-app
-  for a step‑by‑step integration guide.
-
-  We define a custom primary color palette via CSS variables and
-  provide corresponding utility classes to match the prototype's
-  colour scheme. Adjust these values to fine‑tune the look and feel.
-*/
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Design Tokens ---- */
 :root {
-  /* Primary green colour used throughout the design */
-  --primary-green: #7CB92C;
-  --primary-green-dark: #5a8b20;
+  --primary-green: #7CB92C;      /* brand */
+  --primary-green-dark: #5a8b20; /* brand hover/dark */
 }
 
-/* Header links: white text that turns green on hover */
+/* Make sure Sora is used everywhere (Tailwind also sets it via theme) */
+html, body {
+  font-family: 'Sora', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #000;
+  background: #fff;
+}
+
+/* ---- Header / Footer Links ---- */
 .header-link {
   color: #ffffff;
   font-weight: 500;
   transition: color 0.3s ease;
 }
-.header-link:hover {
-  color: var(--primary-green);
-}
+.header-link:hover { color: var(--primary-green); }
 
-/* Footer links: white text that turns green on hover */
 .footer-link {
   color: #ffffff;
   transition: color 0.3s ease;
 }
-.footer-link:hover {
-  color: var(--primary-green);
-}
+.footer-link:hover { color: var(--primary-green); }
 
-/* Buttons: white background with black text and border; green on hover */
+/* ---- Buttons (white → green on hover) ---- */
 .btn {
   background-color: #ffffff;
   border: 2px solid #000000;
@@ -57,27 +44,18 @@
   color: #ffffff;
 }
 
-/* Search overlay: dark translucent background covering the viewport */
+/* ---- Search Overlay ---- */
 .search-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 4rem;
-  z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 4rem; z-index: 1000;
 }
 .search-box {
-  width: 100%;
-  max-width: 640px;
+  width: 100%; max-width: 640px;
   background: #ffffff;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 2rem; border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 .search-input {
   width: 100%;
@@ -86,44 +64,22 @@
   border-radius: 0.375rem;
 }
 
-/* Arrow up button styling */
+/* ---- Arrow Up (floating) ---- */
 .arrow-up {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 50;
-  padding: 0.6rem;
-  border-radius: 9999px;
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50;
+  padding: 0.6rem; border-radius: 9999px;
   background-color: var(--primary-green);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background-color 0.3s ease;
 }
-.arrow-up:hover {
-  background-color: var(--primary-green-dark);
-}
+.arrow-up:hover { background-color: var(--primary-green-dark); }
 
-/* Ensure images do not overflow their containers */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
+/* ---- Image defaults ---- */
+img { max-width: 100%; height: auto; display: block; }
 
-/* HERE CLOUDE */
-/* Grüne Hauptfarbe aus dem Design */
-:root {
-  --primary-green: #7CB92C;
-  --primary-green-dark: #5a8b20;
-}
-
-/* Hover-Effekte für Links */
+/* ---- Generic link hover underline (black) ---- */
 .hover-underline-black {
   border-bottom: 2px solid transparent;
   transition: border-color 0.3s ease;
 }
-.hover-underline-black:hover {
-  border-bottom-color: #000000;
-}
+.hover-underline-black:hover { border-bottom-color: #000000; }
