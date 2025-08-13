@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const FilterBar = ({ onFilterChange }) => {
   const [ageGroups, setAgeGroups] = useState(['Kinder', 'Jugendliche', 'Erwachsene']);
@@ -40,16 +40,14 @@ const FilterBar = ({ onFilterChange }) => {
   ];
   
   const toggleAgeGroup = (group) => {
-    setAgeGroups(prev => 
-      prev.includes(group) 
+    setAgeGroups(prev =>
+      prev.includes(group)
         ? prev.filter(g => g !== group)
         : [...prev, group]
     );
   };
-  
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Call the parent's filter change handler
+
+  useEffect(() => {
     onFilterChange({
       ageGroups,
       inclusion,
@@ -59,15 +57,15 @@ const FilterBar = ({ onFilterChange }) => {
       places: selectedPlaces,
       dates: selectedDates,
     });
-  };
+  }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates, onFilterChange]);
   
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <form onSubmit={handleSubmit}>
-        {/* Age groups and options row */}
-        <div className="mb-6 pb-6 border-b border-gray-200">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-semibold mr-2">Angebote für...</span>
+    <div className="bg-white p-6">
+      {/* Age groups and options row */}
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-semibold mr-2">Angebote für...</span>
+
 
             {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
               <button
@@ -112,11 +110,12 @@ const FilterBar = ({ onFilterChange }) => {
             </button>
           </div>
         </div>
-        
-        {/* Event type toggle */}
-        <div className="mb-6 pb-6 border-b border-gray-200">
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-sm">regelmäßige Angebote</span>
+
+      {/* Event type toggle */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4">
+          <span className="font-semibold text-sm whitespace-nowrap">regelmäßige Angebote</span>
+          <div className="flex-1 bg-black px-2 py-1">
             <input
               type="range"
               min="0"
@@ -126,18 +125,21 @@ const FilterBar = ({ onFilterChange }) => {
                 const val = parseInt(e.target.value);
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
               }}
-              className="w-32 accent-green-600"
+
+              className="filter-range w-full"
             />
-            <span className="font-semibold text-sm">einmalige Veranstaltungen</span>
           </div>
+          <span className="font-semibold text-sm whitespace-nowrap">einmalige Veranstaltungen</span>
         </div>
-        
-        {/* Dropdowns row */}
+      </div>
+
+      {/* Dropdowns row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Themes dropdown */}
           <div className="relative">
             <select
-              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
+              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onChange={(e) => {
                 if (e.target.value && !selectedThemes.includes(e.target.value)) {
                   setSelectedThemes([...selectedThemes, e.target.value]);
@@ -149,6 +151,11 @@ const FilterBar = ({ onFilterChange }) => {
                 <option key={theme} value={theme}>{theme}</option>
               ))}
             </select>
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l5 6 5-6H0z" />
+              </svg>
+            </span>
             {selectedThemes.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedThemes.map(theme => (
@@ -166,11 +173,13 @@ const FilterBar = ({ onFilterChange }) => {
               </div>
             )}
           </div>
-          
+
           {/* Places dropdown */}
           <div className="relative">
             <select
-              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
+
+              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onChange={(e) => {
                 if (e.target.value && !selectedPlaces.includes(e.target.value)) {
                   setSelectedPlaces([...selectedPlaces, e.target.value]);
@@ -182,6 +191,11 @@ const FilterBar = ({ onFilterChange }) => {
                 <option key={place} value={place}>{place}</option>
               ))}
             </select>
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l5 6 5-6H0z" />
+              </svg>
+            </span>
             {selectedPlaces.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedPlaces.map(place => (
@@ -199,13 +213,14 @@ const FilterBar = ({ onFilterChange }) => {
               </div>
             )}
           </div>
-          
+
           {/* Date selector */}
           <div className="relative">
             <input
               type="text"
               placeholder="Termine"
-              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
+              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onFocus={(e) => e.target.type = 'date'}
               onBlur={(e) => e.target.type = 'text'}
               onChange={(e) => {
@@ -214,6 +229,11 @@ const FilterBar = ({ onFilterChange }) => {
                 }
               }}
             />
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l5 6 5-6H0z" />
+              </svg>
+            </span>
             {selectedDates.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedDates.map(date => (
@@ -232,17 +252,6 @@ const FilterBar = ({ onFilterChange }) => {
             )}
           </div>
         </div>
-        
-        {/* Submit button */}
-        <div className="mt-6 text-right">
-          <button
-            type="submit"
-            className="px-6 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors"
-          >
-            Filter anwenden
-          </button>
-        </div>
-      </form>
     </div>
   );
 };
