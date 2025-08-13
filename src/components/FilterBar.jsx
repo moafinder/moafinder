@@ -57,7 +57,9 @@ const FilterBar = ({ onFilterChange }) => {
       places: selectedPlaces,
       dates: selectedDates,
     });
+
   }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates]);
+
   
   return (
     <div className="bg-white p-6">
@@ -65,7 +67,6 @@ const FilterBar = ({ onFilterChange }) => {
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold mr-2">Angebote für...</span>
-
             {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
               <button
                 key={group}
@@ -112,6 +113,7 @@ const FilterBar = ({ onFilterChange }) => {
 
       {/* Event type toggle */}
       <div className="mb-6">
+
         <div className="bg-black text-white grid grid-cols-3 items-center w-full py-2">
           <span className="text-sm text-center">regelmäßige Angebote</span>
           <div className="flex justify-center items-center">
@@ -124,6 +126,7 @@ const FilterBar = ({ onFilterChange }) => {
                 const val = parseInt(e.target.value);
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
               }}
+
               className="filter-range w-24"
             />
           </div>
