@@ -62,86 +62,73 @@ const FilterBar = ({ onFilterChange }) => {
   };
   
   return (
-    <div className="bg-gray-100 p-4 rounded-lg">
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
       <form onSubmit={handleSubmit}>
         {/* Age groups and options row */}
-        <div className="mb-4 pb-4 border-b border-gray-300">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="font-semibold">Angebote für...</span>
-            
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ageGroups.includes('Kinder')}
-                onChange={() => toggleAgeGroup('Kinder')}
-                className="mr-2"
-              />
-              <span>Kinder</span>
-            </label>
-            
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ageGroups.includes('Jugendliche')}
-                onChange={() => toggleAgeGroup('Jugendliche')}
-                className="mr-2"
-              />
-              <span>Jugendliche</span>
-            </label>
-            
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ageGroups.includes('Erwachsene')}
-                onChange={() => toggleAgeGroup('Erwachsene')}
-                className="mr-2"
-              />
-              <span>Erwachsene</span>
-            </label>
-            
-            <label className="flex items-center cursor-pointer group relative">
-              <input
-                type="checkbox"
-                checked={inclusion}
-                onChange={(e) => setInclusion(e.target.checked)}
-                className="mr-2"
-              />
-              <span>Inklusion*</span>
-              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-black text-white text-xs p-2 rounded w-48">
+        <div className="mb-6 pb-6 border-b border-gray-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-semibold mr-2">Angebote für...</span>
+
+            {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
+              <button
+                key={group}
+                type="button"
+                onClick={() => toggleAgeGroup(group)}
+                className={`px-4 py-2 rounded-full border-2 text-sm transition-colors ${
+                  ageGroups.includes(group)
+                    ? 'bg-green-500 text-white border-green-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setInclusion(!inclusion)}
+              className={`relative px-4 py-2 rounded-full border-2 text-sm transition-colors group ${
+                inclusion
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              Inklusion*
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs p-2 rounded w-48">
                 Barrierefreie Angebote und Veranstaltungen
-              </div>
-            </label>
-            
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={free}
-                onChange={(e) => setFree(e.target.checked)}
-                className="mr-2"
-              />
-              <span>umsonst</span>
-            </label>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFree(!free)}
+              className={`px-4 py-2 rounded-full border-2 text-sm transition-colors ${
+                free
+                  ? 'bg-green-500 text-white border-green-500'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              umsonst
+            </button>
           </div>
         </div>
         
         {/* Event type toggle */}
-        <div className="mb-4 pb-4 border-b border-gray-300">
+        <div className="mb-6 pb-6 border-b border-gray-200">
           <div className="flex items-center gap-4">
-            <span className="font-semibold">regelmäßige Angebote</span>
-            <div className="relative inline-block w-20 h-8">
-              <input
-                type="range"
-                min="0"
-                max="2"
-                value={eventType === 'regelmäßig' ? 0 : eventType === 'all' ? 1 : 2}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
-                }}
-                className="slider w-full"
-              />
-            </div>
-            <span className="font-semibold">einmalige Veranstaltungen</span>
+            <span className="font-semibold text-sm">regelmäßige Angebote</span>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              value={eventType === 'regelmäßig' ? 0 : eventType === 'all' ? 1 : 2}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
+              }}
+              className="w-32 accent-green-600"
+            />
+            <span className="font-semibold text-sm">einmalige Veranstaltungen</span>
           </div>
         </div>
         
@@ -149,8 +136,8 @@ const FilterBar = ({ onFilterChange }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Themes dropdown */}
           <div className="relative">
-            <select 
-              className="w-full p-2 border border-gray-300 rounded"
+            <select
+              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
               onChange={(e) => {
                 if (e.target.value && !selectedThemes.includes(e.target.value)) {
                   setSelectedThemes([...selectedThemes, e.target.value]);
@@ -182,8 +169,8 @@ const FilterBar = ({ onFilterChange }) => {
           
           {/* Places dropdown */}
           <div className="relative">
-            <select 
-              className="w-full p-2 border border-gray-300 rounded"
+            <select
+              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
               onChange={(e) => {
                 if (e.target.value && !selectedPlaces.includes(e.target.value)) {
                   setSelectedPlaces([...selectedPlaces, e.target.value]);
@@ -218,7 +205,7 @@ const FilterBar = ({ onFilterChange }) => {
             <input
               type="text"
               placeholder="Termine"
-              className="w-full p-2 border border-gray-300 rounded"
+              className="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:border-green-500"
               onFocus={(e) => e.target.type = 'date'}
               onBlur={(e) => e.target.type = 'text'}
               onChange={(e) => {
@@ -247,8 +234,11 @@ const FilterBar = ({ onFilterChange }) => {
         </div>
         
         {/* Submit button */}
-        <div className="mt-4 text-right">
-          <button type="submit" className="btn">
+        <div className="mt-6 text-right">
+          <button
+            type="submit"
+            className="px-6 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
             Filter anwenden
           </button>
         </div>
