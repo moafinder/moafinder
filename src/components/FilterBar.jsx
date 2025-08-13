@@ -57,7 +57,9 @@ const FilterBar = ({ onFilterChange }) => {
       places: selectedPlaces,
       dates: selectedDates,
     });
-  }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates, onFilterChange]);
+
+  }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates]);
+
   
   return (
     <div className="bg-white p-6">
@@ -65,8 +67,6 @@ const FilterBar = ({ onFilterChange }) => {
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold mr-2">Angebote für...</span>
-
-
             {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
               <button
                 key={group}
@@ -113,9 +113,10 @@ const FilterBar = ({ onFilterChange }) => {
 
       {/* Event type toggle */}
       <div className="mb-6">
-        <div className="flex items-center gap-4">
-          <span className="font-semibold text-sm whitespace-nowrap">regelmäßige Angebote</span>
-          <div className="flex-1 bg-black px-2 py-1">
+
+        <div className="bg-black text-white grid grid-cols-3 items-center w-full py-2">
+          <span className="text-sm text-center">regelmäßige Angebote</span>
+          <div className="flex justify-center items-center">
             <input
               type="range"
               min="0"
@@ -126,10 +127,10 @@ const FilterBar = ({ onFilterChange }) => {
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
               }}
 
-              className="filter-range w-full"
+              className="filter-range w-24"
             />
           </div>
-          <span className="font-semibold text-sm whitespace-nowrap">einmalige Veranstaltungen</span>
+          <span className="text-sm text-center">einmalige Veranstaltungen</span>
         </div>
       </div>
 
@@ -139,11 +140,12 @@ const FilterBar = ({ onFilterChange }) => {
           <div className="relative">
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
-
               onChange={(e) => {
-                if (e.target.value && !selectedThemes.includes(e.target.value)) {
-                  setSelectedThemes([...selectedThemes, e.target.value]);
+                const value = e.target.value;
+                if (value && !selectedThemes.includes(value)) {
+                  setSelectedThemes(prev => [...prev, value]);
                 }
+                e.target.value = '';
               }}
             >
               <option value="">Themen</option>
@@ -151,8 +153,8 @@ const FilterBar = ({ onFilterChange }) => {
                 <option key={theme} value={theme}>{theme}</option>
               ))}
             </select>
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
+              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0l5 6 5-6H0z" />
               </svg>
             </span>
@@ -163,7 +165,7 @@ const FilterBar = ({ onFilterChange }) => {
                     {theme}
                     <button
                       type="button"
-                      onClick={() => setSelectedThemes(selectedThemes.filter(t => t !== theme))}
+                      onClick={() => setSelectedThemes(prev => prev.filter(t => t !== theme))}
                       className="ml-1 text-red-500"
                     >
                       ×
@@ -177,13 +179,13 @@ const FilterBar = ({ onFilterChange }) => {
           {/* Places dropdown */}
           <div className="relative">
             <select
-
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
-
               onChange={(e) => {
-                if (e.target.value && !selectedPlaces.includes(e.target.value)) {
-                  setSelectedPlaces([...selectedPlaces, e.target.value]);
+                const value = e.target.value;
+                if (value && !selectedPlaces.includes(value)) {
+                  setSelectedPlaces(prev => [...prev, value]);
                 }
+                e.target.value = '';
               }}
             >
               <option value="">Orte</option>
@@ -191,8 +193,8 @@ const FilterBar = ({ onFilterChange }) => {
                 <option key={place} value={place}>{place}</option>
               ))}
             </select>
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
+              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0l5 6 5-6H0z" />
               </svg>
             </span>
@@ -203,7 +205,7 @@ const FilterBar = ({ onFilterChange }) => {
                     {place}
                     <button
                       type="button"
-                      onClick={() => setSelectedPlaces(selectedPlaces.filter(p => p !== place))}
+                      onClick={() => setSelectedPlaces(prev => prev.filter(p => p !== place))}
                       className="ml-1 text-red-500"
                     >
                       ×
@@ -220,17 +222,18 @@ const FilterBar = ({ onFilterChange }) => {
               type="text"
               placeholder="Termine"
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
-
-              onFocus={(e) => e.target.type = 'date'}
-              onBlur={(e) => e.target.type = 'text'}
+              onFocus={(e) => (e.target.type = 'date')}
+              onBlur={(e) => (e.target.type = 'text')}
               onChange={(e) => {
-                if (e.target.value && !selectedDates.includes(e.target.value)) {
-                  setSelectedDates([...selectedDates, e.target.value]);
+                const value = e.target.value;
+                if (value && !selectedDates.includes(value)) {
+                  setSelectedDates(prev => [...prev, value]);
                 }
+                e.target.value = '';
               }}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-              <svg className="w-2 h-2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
+              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0l5 6 5-6H0z" />
               </svg>
             </span>
@@ -241,7 +244,7 @@ const FilterBar = ({ onFilterChange }) => {
                     {new Date(date).toLocaleDateString('de-DE')}
                     <button
                       type="button"
-                      onClick={() => setSelectedDates(selectedDates.filter(d => d !== date))}
+                      onClick={() => setSelectedDates(prev => prev.filter(d => d !== date))}
                       className="ml-1 text-red-500"
                     >
                       ×
