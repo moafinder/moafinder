@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import FilterBar from '../components/FilterBar';
 import headerGraphic from '../assets/header_grafik_klein.png';
@@ -8,15 +8,15 @@ const FormatsPage = () => {
   const [filteredEvents, setFilteredEvents] = useState(EVENTS);
 
   // Apply filtering logic based on selected filters
-  const handleFilterChange = (filters) => {
+  const handleFilterChange = useCallback((filters) => {
     let results = EVENTS;
 
     // AND logic for checkboxes (age groups, inclusion, free)
     if (filters.ageGroups && filters.ageGroups.length && filters.ageGroups.length !== 3) {
-      results = results.filter((event) => {
-        if (!event.ageGroups) return false;
-        return filters.ageGroups.every((g) => event.ageGroups.includes(g));
-      });
+      results = results.filter(
+        (event) =>
+          event.ageGroups && filters.ageGroups.some((g) => event.ageGroups.includes(g))
+      );
     }
 
     if (filters.inclusion) {
@@ -58,7 +58,7 @@ const FormatsPage = () => {
     }
 
     setFilteredEvents(results);
-  };
+  }, []);
   
   const renderEventCard = (event) => (
     <Link to={`/event/${event.id}`} key={event.id} className="block">
