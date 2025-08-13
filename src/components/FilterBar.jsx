@@ -66,6 +66,7 @@ const FilterBar = ({ onFilterChange }) => {
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold mr-2">Angebote für...</span>
 
+
             {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
               <button
                 key={group}
@@ -124,6 +125,7 @@ const FilterBar = ({ onFilterChange }) => {
                 const val = parseInt(e.target.value);
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
               }}
+
               className="filter-range w-full"
             />
           </div>
@@ -137,6 +139,7 @@ const FilterBar = ({ onFilterChange }) => {
           <div className="relative">
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onChange={(e) => {
                 if (e.target.value && !selectedThemes.includes(e.target.value)) {
                   setSelectedThemes([...selectedThemes, e.target.value]);
@@ -174,7 +177,9 @@ const FilterBar = ({ onFilterChange }) => {
           {/* Places dropdown */}
           <div className="relative">
             <select
+
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onChange={(e) => {
                 if (e.target.value && !selectedPlaces.includes(e.target.value)) {
                   setSelectedPlaces([...selectedPlaces, e.target.value]);
@@ -215,6 +220,7 @@ const FilterBar = ({ onFilterChange }) => {
               type="text"
               placeholder="Termine"
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+
               onFocus={(e) => e.target.type = 'date'}
               onBlur={(e) => e.target.type = 'text'}
               onChange={(e) => {
