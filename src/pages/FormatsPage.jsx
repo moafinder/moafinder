@@ -6,10 +6,59 @@ import { EVENTS } from '../data/mockData';
 
 const FormatsPage = () => {
   const [filteredEvents, setFilteredEvents] = useState(EVENTS);
-  
-  // Sections for NEUESTE and HEUTE
-  const newestEvents = EVENTS.slice(0, 4);
-  const todayEvents = EVENTS.filter(e => e.date === '2025-04-24');
+
+  // Apply filtering logic based on selected filters
+  const handleFilterChange = (filters) => {
+    let results = EVENTS;
+
+    // AND logic for checkboxes (age groups, inclusion, free)
+    if (filters.ageGroups && filters.ageGroups.length && filters.ageGroups.length !== 3) {
+      results = results.filter((event) => {
+        if (!event.ageGroups) return false;
+        return filters.ageGroups.every((g) => event.ageGroups.includes(g));
+      });
+    }
+
+    if (filters.inclusion) {
+      results = results.filter((event) => event.inclusion);
+    }
+
+    if (filters.free) {
+      results = results.filter((event) => event.free);
+    }
+
+    if (filters.eventType && filters.eventType !== 'all') {
+      const typeMap = {
+        einmalig: 'einmalige Veranstaltung',
+        regelmäßig: 'regelmäßiges Angebot',
+      };
+      results = results.filter((event) => event.type === typeMap[filters.eventType]);
+    }
+
+    // OR logic for dropdown selections
+    if (filters.themes && filters.themes.length) {
+      results = results.filter((event) => {
+        const categories = event.category
+          ? event.category.split(',').map((c) => c.trim())
+          : [];
+        return filters.themes.some((theme) => categories.includes(theme));
+      });
+    }
+
+    if (filters.places && filters.places.length) {
+      results = results.filter(
+        (event) =>
+          filters.places.includes(event.place) ||
+          filters.places.includes(event.placeShort)
+      );
+    }
+
+    if (filters.dates && filters.dates.length) {
+      results = results.filter((event) => filters.dates.includes(event.date));
+    }
+
+    setFilteredEvents(results);
+  };
   
   const renderEventCard = (event) => (
     <Link to={`/event/${event.id}`} key={event.id} className="block">
@@ -56,28 +105,18 @@ const FormatsPage = () => {
       </div>
       
       {/* Filter bar */}
-      <FilterBar onFilterChange={setFilteredEvents} />
-      
-      {/* NEUESTE section */}
+      <FilterBar onFilterChange={handleFilterChange} />
+
+      {/* Filtered results */}
       <section className="mt-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center">
-          <span className="text-green-600 mr-2">▶</span> NEUESTE
+          <span className="text-green-600 mr-2">▶</span> SUCHERGEBNISSE
         </h2>
         <div className="space-y-2">
-          {newestEvents.map(renderEventCard)}
-        </div>
-      </section>
-      
-      {/* HEUTE section */}
-      <section className="mt-8">
-        <h2 className="text-2xl font-bold mb-4 flex items-center">
-          <span className="text-green-600 mr-2">▶</span> HEUTE
-        </h2>
-        <div className="space-y-2">
-          {todayEvents.length > 0 ? (
-            todayEvents.map(renderEventCard)
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map(renderEventCard)
           ) : (
-            <p className="text-gray-600">Keine Veranstaltungen für heute.</p>
+            <p className="text-gray-600">Keine Veranstaltungen gefunden.</p>
           )}
         </div>
       </section>
