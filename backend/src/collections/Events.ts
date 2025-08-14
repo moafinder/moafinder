@@ -1,4 +1,4 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Events: CollectionConfig = {
   slug: 'events',
@@ -7,45 +7,24 @@ const Events: CollectionConfig = {
     defaultColumns: ['title', 'startDate', 'location', 'status', 'organizer'],
   },
   access: {
-    read: ({ req: { user } }) => {
+    read: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
       if (!user) {
-        // Public can only see approved events
-        return {
-          status: {
-            equals: 'approved',
-          },
-        };
+        return { status: { equals: 'approved' } } as any
       }
-      // Logged in users can see their own events
       if (user.role === 'organizer') {
         return {
-          or: [
-            {
-              status: {
-                equals: 'approved',
-              },
-            },
-            {
-              organizer: {
-                equals: user.id,
-              },
-            },
-          ],
-        };
+          or: [{ status: { equals: 'approved' } }, { organizer: { equals: user.id } }],
+        } as any
       }
-      // Editors and admins can see all
-      return true;
+      return true
     },
-    create: ({ req: { user } }) => !!user,
-    update: ({ req: { user } }) => {
-      if (!user) return false;
-      if (user.role === 'admin' || user.role === 'editor') return true;
-      // Organizers can only update their own events
-      return {
-        organizer: {
-          equals: user.id,
-        },
-      };
+    create: ({ req }: { req: PayloadRequest }) => !!req.user,
+    update: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
+      return { organizer: { equals: user.id } } as any
     },
   },
   fields: [
@@ -131,9 +110,9 @@ const Events: CollectionConfig = {
       relationTo: 'organizations',
       required: true,
       label: 'Veranstalter',
-      defaultValue: ({ user }) => user?.id,
+      defaultValue: ({ user }: { user: PayloadRequest['user'] }) => user?.id,
       access: {
-        update: ({ req: { user } }) => user?.role === 'admin',
+        update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
       },
     },
     {
@@ -180,22 +159,23 @@ const Events: CollectionConfig = {
         { label: 'Archiviert', value: 'archived' },
       ],
       access: {
-        update: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
+        update: ({ req }: { req: PayloadRequest }) =>
+          req.user?.role === 'editor' || req.user?.role === 'admin',
       },
     },
   ],
   hooks: {
     afterChange: [
-      async ({ doc, operation, req }) => {
+      async ({ doc, operation, req }: { doc: any; operation: string; req: PayloadRequest }) => {
         // Send email notification when status changes to approved
         if (operation === 'update' && doc.status === 'approved') {
           // TODO: Implement email notification
-          console.log('Event approved, send notification email');
+          console.log('Event approved, send notification email')
         }
       },
     ],
   },
   timestamps: true,
-};
+}
 
-export default Events;
+export default Events

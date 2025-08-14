@@ -1,4 +1,4 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Organizations: CollectionConfig = {
   slug: 'organizations',
@@ -10,13 +10,14 @@ const Organizations: CollectionConfig = {
   access: {
     read: () => true,
     create: () => true,
-    update: ({ req: { user } }) => {
-      if (user?.role === 'admin') return true;
+    update: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (user?.role === 'admin') return true
       return {
         id: {
           equals: user?.id,
         },
-      };
+      } as any
     },
   },
   fields: [
@@ -36,7 +37,7 @@ const Organizations: CollectionConfig = {
       ],
       defaultValue: 'organizer',
       access: {
-        update: ({ req: { user } }) => user?.role === 'admin',
+        update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
       },
     },
     {
@@ -77,11 +78,12 @@ const Organizations: CollectionConfig = {
       label: 'Freigegeben',
       defaultValue: false,
       access: {
-        update: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
+        update: ({ req }: { req: PayloadRequest }) =>
+          req.user?.role === 'editor' || req.user?.role === 'admin',
       },
     },
   ],
   timestamps: true,
-};
+}
 
-export default Organizations;
+export default Organizations

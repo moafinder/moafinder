@@ -1,10 +1,9 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig } from 'payload'
 
 const Media: CollectionConfig = {
   slug: 'media',
   upload: {
     staticDir: '../uploads',
-    staticURL: '/uploads',
     mimeTypes: ['image/*'],
     imageSizes: [
       {
@@ -35,6 +34,6 @@ const Media: CollectionConfig = {
       label: 'Alt Text',
     },
   ],
-};
+}
 
-export default Media;
+export default Media
