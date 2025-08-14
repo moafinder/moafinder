@@ -1,4 +1,4 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Locations: CollectionConfig = {
   slug: 'locations',
@@ -8,9 +8,11 @@ const Locations: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req }: { req: PayloadRequest }) =>
+      req.user?.role === 'editor' || req.user?.role === 'admin',
+    update: ({ req }: { req: PayloadRequest }) =>
+      req.user?.role === 'editor' || req.user?.role === 'admin',
+    delete: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
   },
   fields: [
     {
@@ -76,6 +78,6 @@ const Locations: CollectionConfig = {
     },
   ],
   timestamps: true,
-};
+}
 
-export default Locations;
+export default Locations

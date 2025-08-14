@@ -1,4 +1,4 @@
-import { CollectionConfig } from 'payload';
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Tags: CollectionConfig = {
   slug: 'tags',
@@ -7,9 +7,11 @@ const Tags: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
-    update: ({ req: { user } }) => user?.role === 'editor' || user?.role === 'admin',
-    delete: ({ req: { user } }) => user?.role === 'admin',
+    create: ({ req }: { req: PayloadRequest }) =>
+      req.user?.role === 'editor' || req.user?.role === 'admin',
+    update: ({ req }: { req: PayloadRequest }) =>
+      req.user?.role === 'editor' || req.user?.role === 'admin',
+    delete: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
   },
   fields: [
     {
@@ -47,6 +49,6 @@ const Tags: CollectionConfig = {
       },
     },
   ],
-};
+}
 
-export default Tags;
+export default Tags
