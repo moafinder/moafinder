@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import EventDetail from './pages/EventDetail';
 import PlaceProfile from './pages/PlaceProfile';
+import NotesPage from './pages/NotesPage';
 import './App.css';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/kontakt" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/notes" element={<NotesPage />} />
         </Routes>
       </main>
       <Footer />
