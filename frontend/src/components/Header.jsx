@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import SearchOverlay from './SearchOverlay';
@@ -8,6 +9,7 @@ import pigeonWhite from '../assets/pigeon_white.png';
 const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   const isActive = (path) => {
     return location.pathname === path ? 'text-green-400' : 'text-white hover:text-green-400';
@@ -51,9 +53,23 @@ const Header = () => {
               >
                 <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
               </button>
-              <Link to="/login" className="font-medium text-white hover:text-green-400 transition-colors">
-                Login
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/notes" className="font-medium text-white hover:text-green-400 transition-colors">
+                    Notes
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="font-medium text-white hover:text-green-400 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="font-medium text-white hover:text-green-400 transition-colors">
+                  Login
+                </Link>
+              )}
             </div>
           </div>
           
