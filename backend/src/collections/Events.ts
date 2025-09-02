@@ -9,12 +9,23 @@ const Events: CollectionConfig = {
   access: {
     read: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
+      const notExpired = {
+        or: [
+          { expiryDate: { equals: null } },
+          { expiryDate: { greater_than_equal: new Date().toISOString() } },
+        ],
+      }
       if (!user) {
-        return { status: { equals: 'approved' } } as any
+        return {
+          and: [{ status: { equals: 'approved' } }, notExpired],
+        } as any
       }
       if (user.role === 'organizer') {
         return {
-          or: [{ status: { equals: 'approved' } }, { organizer: { equals: user.id } }],
+          or: [
+            { and: [{ status: { equals: 'approved' } }, notExpired] },
+            { organizer: { equals: user.id } },
+          ],
         } as any
       }
       return true
@@ -163,8 +174,37 @@ const Events: CollectionConfig = {
           req.user?.role === 'editor' || req.user?.role === 'admin',
       },
     },
+    {
+      name: 'expiryDate',
+      type: 'date',
+      label: 'Ablaufdatum',
+      admin: {
+        date: {
+          pickerAppearance: 'day',
+        },
+      },
+    },
+    {
+      name: 'lastRenewalReminder',
+      type: 'date',
+      label: 'Letzte Erinnerung zur Verlängerung',
+      admin: {
+        readOnly: true,
+      },
+    },
   ],
   hooks: {
+    beforeValidate: [
+      ({ data }: { data: any }) => {
+        if (!data?.expiryDate) {
+          const baseDate = data?.endDate || data?.startDate
+          if (baseDate) {
+            data.expiryDate = baseDate
+          }
+        }
+        return data
+      },
+    ],
     afterChange: [
       async ({ doc, operation, req }: { doc: any; operation: string; req: PayloadRequest }) => {
         // Send email notification when status changes to approved

@@ -59,509 +59,626 @@ export type SupportedTimezones =
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
   | 'Pacific/Auckland'
-  | 'Pacific/Fiji'
+  | 'Pacific/Fiji';
 
 export interface Config {
   auth: {
-    organizations: OrganizationAuthOperations
-  }
-  blocks: {}
+    users: UserAuthOperations;
+    organizations: OrganizationAuthOperations;
+  };
+  blocks: {};
   collections: {
-    organizations: Organization
-    events: Event
-    locations: Location
-    tags: Tag
-    media: Media
-    'payload-locked-documents': PayloadLockedDocument
-    'payload-preferences': PayloadPreference
-    'payload-migrations': PayloadMigration
-  }
-  collectionsJoins: {}
+    users: User;
+    organizations: Organization;
+    events: Event;
+    locations: Location;
+    tags: Tag;
+    media: Media;
+    notes: Note;
+    'payload-locked-documents': PayloadLockedDocument;
+    'payload-preferences': PayloadPreference;
+    'payload-migrations': PayloadMigration;
+  };
+  collectionsJoins: {};
   collectionsSelect: {
-    organizations: OrganizationsSelect<false> | OrganizationsSelect<true>
-    events: EventsSelect<false> | EventsSelect<true>
-    locations: LocationsSelect<false> | LocationsSelect<true>
-    tags: TagsSelect<false> | TagsSelect<true>
-    media: MediaSelect<false> | MediaSelect<true>
-    'payload-locked-documents':
-      | PayloadLockedDocumentsSelect<false>
-      | PayloadLockedDocumentsSelect<true>
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>
-  }
+    users: UsersSelect<false> | UsersSelect<true>;
+    organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    locations: LocationsSelect<false> | LocationsSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    notes: NotesSelect<false> | NotesSelect<true>;
+    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
+  };
   db: {
-    defaultIDType: string
-  }
-  globals: {}
-  globalsSelect: {}
-  locale: null
-  user: Organization & {
-    collection: 'organizations'
-  }
+    defaultIDType: string;
+  };
+  globals: {};
+  globalsSelect: {};
+  locale: null;
+  user:
+    | (User & {
+        collection: 'users';
+      })
+    | (Organization & {
+        collection: 'organizations';
+      });
   jobs: {
-    tasks: unknown
-    workflows: unknown
-  }
+    tasks: unknown;
+    workflows: unknown;
+  };
+}
+export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
 }
 export interface OrganizationAuthOperations {
   forgotPassword: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   login: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   registerFirstUser: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   unlock: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: string;
+  role: 'admin' | 'editor' | 'organizer';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "organizations".
  */
 export interface Organization {
-  id: string
-  name: string
-  role?: ('organizer' | 'editor' | 'admin') | null
-  contactPerson?: string | null
+  id: string;
+  name: string;
+  role?: ('organizer' | 'editor' | 'admin') | null;
+  contactPerson?: string | null;
   address?: {
-    street?: string | null
-    number?: string | null
-    postalCode?: string | null
-    city?: string | null
-  }
-  website?: string | null
-  phone?: string | null
-  logo?: (string | null) | Media
-  approved?: boolean | null
-  updatedAt: string
-  createdAt: string
-  email: string
-  resetPasswordToken?: string | null
-  resetPasswordExpiration?: string | null
-  salt?: string | null
-  hash?: string | null
-  loginAttempts?: number | null
-  lockUntil?: string | null
+    street?: string | null;
+    number?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+  };
+  website?: string | null;
+  phone?: string | null;
+  logo?: (string | null) | Media;
+  approved?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
   sessions?:
     | {
-        id: string
-        createdAt?: string | null
-        expiresAt: string
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
       }[]
-    | null
-  password?: string | null
+    | null;
+  password?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: string
-  alt: string
-  updatedAt: string
-  createdAt: string
-  url?: string | null
-  thumbnailURL?: string | null
-  filename?: string | null
-  mimeType?: string | null
-  filesize?: number | null
-  width?: number | null
-  height?: number | null
-  focalX?: number | null
-  focalY?: number | null
+  id: string;
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   sizes?: {
     thumbnail?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     card?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     tablet?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
-  }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events".
  */
 export interface Event {
-  id: string
-  title: string
-  subtitle?: string | null
-  eventType: 'einmalig' | 'täglich' | 'wöchentlich' | 'monatlich' | 'jährlich'
-  startDate: string
-  endDate?: string | null
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  eventType: 'einmalig' | 'täglich' | 'wöchentlich' | 'monatlich' | 'jährlich';
+  startDate: string;
+  endDate?: string | null;
   time?: {
-    from?: string | null
-    to?: string | null
-  }
-  description: string
-  image?: (string | null) | Media
-  location: string | Location
-  organizer: string | Organization
-  isAccessible?: boolean | null
+    from?: string | null;
+    to?: string | null;
+  };
+  description: string;
+  image?: (string | null) | Media;
+  location: string | Location;
+  organizer: string | Organization;
+  isAccessible?: boolean | null;
   cost?: {
-    isFree?: boolean | null
-    details?: string | null
-  }
+    isFree?: boolean | null;
+    details?: string | null;
+  };
   registration?: {
-    required?: boolean | null
-    details?: string | null
-  }
-  tags?: (string | Tag)[] | null
-  status: 'draft' | 'pending' | 'approved' | 'archived'
-  updatedAt: string
-  createdAt: string
+    required?: boolean | null;
+    details?: string | null;
+  };
+  tags?: (string | Tag)[] | null;
+  status: 'draft' | 'pending' | 'approved' | 'archived';
+  expiryDate?: string | null;
+  lastRenewalReminder?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "locations".
  */
 export interface Location {
-  id: string
-  name: string
+  id: string;
+  name: string;
   /**
    * Erscheint im Filtermenü und in der Karte
    */
-  shortName: string
-  description?: string | null
-  image?: (string | null) | Media
+  shortName: string;
+  description?: string | null;
+  image?: (string | null) | Media;
   address: {
-    street: string
-    number: string
-    postalCode: string
-    city?: string | null
-  }
+    street: string;
+    number: string;
+    postalCode: string;
+    city?: string | null;
+  };
   /**
    * @minItems 2
    * @maxItems 2
    */
-  coordinates?: [number, number] | null
+  coordinates?: [number, number] | null;
   /**
    * X und Y Position in Prozent (0-100)
    */
   mapPosition?: {
-    x?: number | null
-    y?: number | null
-  }
-  openingHours?: string | null
-  updatedAt: string
-  createdAt: string
+    x?: number | null;
+    y?: number | null;
+  };
+  openingHours?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags".
  */
 export interface Tag {
-  id: string
-  name: string
-  slug: string
-  category?: ('target' | 'topic' | 'format') | null
+  id: string;
+  name: string;
+  slug: string;
+  category?: ('target' | 'topic' | 'format') | null;
   /**
    * z.B. #7CB92C
    */
-  color?: string | null
-  updatedAt: string
-  createdAt: string
+  color?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notes".
+ */
+export interface Note {
+  id: string;
+  content: string;
+  user: string | User;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string
+  id: string;
   document?:
     | ({
-        relationTo: 'organizations'
-        value: string | Organization
+        relationTo: 'users';
+        value: string | User;
       } | null)
     | ({
-        relationTo: 'events'
-        value: string | Event
+        relationTo: 'organizations';
+        value: string | Organization;
       } | null)
     | ({
-        relationTo: 'locations'
-        value: string | Location
+        relationTo: 'events';
+        value: string | Event;
       } | null)
     | ({
-        relationTo: 'tags'
-        value: string | Tag
+        relationTo: 'locations';
+        value: string | Location;
       } | null)
     | ({
-        relationTo: 'media'
-        value: string | Media
+        relationTo: 'tags';
+        value: string | Tag;
       } | null)
-  globalSlug?: string | null
-  user: {
-    relationTo: 'organizations'
-    value: string | Organization
-  }
-  updatedAt: string
-  createdAt: string
+    | ({
+        relationTo: 'media';
+        value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'notes';
+        value: string | Note;
+      } | null);
+  globalSlug?: string | null;
+  user:
+    | {
+        relationTo: 'users';
+        value: string | User;
+      }
+    | {
+        relationTo: 'organizations';
+        value: string | Organization;
+      };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string
-  user: {
-    relationTo: 'organizations'
-    value: string | Organization
-  }
-  key?: string | null
+  id: string;
+  user:
+    | {
+        relationTo: 'users';
+        value: string | User;
+      }
+    | {
+        relationTo: 'organizations';
+        value: string | Organization;
+      };
+  key?: string | null;
   value?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string
-  name?: string | null
-  batch?: number | null
-  updatedAt: string
-  createdAt: string
+  id: string;
+  name?: string | null;
+  batch?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users_select".
+ */
+export interface UsersSelect<T extends boolean = true> {
+  role?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "organizations_select".
  */
 export interface OrganizationsSelect<T extends boolean = true> {
-  name?: T
-  role?: T
-  contactPerson?: T
+  name?: T;
+  role?: T;
+  contactPerson?: T;
   address?:
     | T
     | {
-        street?: T
-        number?: T
-        postalCode?: T
-        city?: T
-      }
-  website?: T
-  phone?: T
-  logo?: T
-  approved?: T
-  updatedAt?: T
-  createdAt?: T
-  email?: T
-  resetPasswordToken?: T
-  resetPasswordExpiration?: T
-  salt?: T
-  hash?: T
-  loginAttempts?: T
-  lockUntil?: T
+        street?: T;
+        number?: T;
+        postalCode?: T;
+        city?: T;
+      };
+  website?: T;
+  phone?: T;
+  logo?: T;
+  approved?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
   sessions?:
     | T
     | {
-        id?: T
-        createdAt?: T
-        expiresAt?: T
-      }
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
-  title?: T
-  subtitle?: T
-  eventType?: T
-  startDate?: T
-  endDate?: T
+  title?: T;
+  subtitle?: T;
+  eventType?: T;
+  startDate?: T;
+  endDate?: T;
   time?:
     | T
     | {
-        from?: T
-        to?: T
-      }
-  description?: T
-  image?: T
-  location?: T
-  organizer?: T
-  isAccessible?: T
+        from?: T;
+        to?: T;
+      };
+  description?: T;
+  image?: T;
+  location?: T;
+  organizer?: T;
+  isAccessible?: T;
   cost?:
     | T
     | {
-        isFree?: T
-        details?: T
-      }
+        isFree?: T;
+        details?: T;
+      };
   registration?:
     | T
     | {
-        required?: T
-        details?: T
-      }
-  tags?: T
-  status?: T
-  updatedAt?: T
-  createdAt?: T
+        required?: T;
+        details?: T;
+      };
+  tags?: T;
+  status?: T;
+  expiryDate?: T;
+  lastRenewalReminder?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "locations_select".
  */
 export interface LocationsSelect<T extends boolean = true> {
-  name?: T
-  shortName?: T
-  description?: T
-  image?: T
+  name?: T;
+  shortName?: T;
+  description?: T;
+  image?: T;
   address?:
     | T
     | {
-        street?: T
-        number?: T
-        postalCode?: T
-        city?: T
-      }
-  coordinates?: T
+        street?: T;
+        number?: T;
+        postalCode?: T;
+        city?: T;
+      };
+  coordinates?: T;
   mapPosition?:
     | T
     | {
-        x?: T
-        y?: T
-      }
-  openingHours?: T
-  updatedAt?: T
-  createdAt?: T
+        x?: T;
+        y?: T;
+      };
+  openingHours?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags_select".
  */
 export interface TagsSelect<T extends boolean = true> {
-  name?: T
-  slug?: T
-  category?: T
-  color?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  slug?: T;
+  category?: T;
+  color?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  alt?: T
-  updatedAt?: T
-  createdAt?: T
-  url?: T
-  thumbnailURL?: T
-  filename?: T
-  mimeType?: T
-  filesize?: T
-  width?: T
-  height?: T
-  focalX?: T
-  focalY?: T
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
   sizes?:
     | T
     | {
         thumbnail?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         card?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         tablet?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
-      }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notes_select".
+ */
+export interface NotesSelect<T extends boolean = true> {
+  content?: T;
+  user?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
-  document?: T
-  globalSlug?: T
-  user?: T
-  updatedAt?: T
-  createdAt?: T
+  document?: T;
+  globalSlug?: T;
+  user?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences_select".
  */
 export interface PayloadPreferencesSelect<T extends boolean = true> {
-  user?: T
-  key?: T
-  value?: T
-  updatedAt?: T
-  createdAt?: T
+  user?: T;
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations_select".
  */
 export interface PayloadMigrationsSelect<T extends boolean = true> {
-  name?: T
-  batch?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  batch?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
-  [k: string]: unknown
+  [k: string]: unknown;
 }
+
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}
