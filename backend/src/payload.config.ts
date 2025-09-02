@@ -6,6 +6,8 @@ import Events from './collections/Events'
 import Locations from './collections/Locations'
 import Tags from './collections/Tags'
 import Media from './collections/Media'
+import { Users } from './collections/Users'
+import Notes from './collections/Notes'
 import 'dotenv/config' // make sure env vars are available
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 
@@ -18,12 +20,12 @@ export default buildConfig({
   }),
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000',
   admin: {
-    user: Organizations.slug,
+    user: Users.slug,
     meta: {
       titleSuffix: '- MoaFinder CMS',
     },
   },
-  collections: [Organizations, Events, Locations, Tags, Media],
+  collections: [Users, Organizations, Events, Locations, Tags, Media, Notes],
   typescript: {
     outputFile: path.resolve(__dirname, 'payload-types.ts'),
   },

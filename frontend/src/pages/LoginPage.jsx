@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import kiezMachenLogo from '../assets/kiezmachen_logo.png';
 import refoLogo from '../assets/refo_logo.png';
 import partnerLogos from '../assets/partner_logos.png';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Login page matching the Figma design.
@@ -15,27 +16,27 @@ import partnerLogos from '../assets/partner_logos.png';
  */
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Bitte geben Sie Ihre Zugangsdaten ein.');
       return;
     }
-    
-    // TODO: Replace with real authentication
-    console.log('Login attempt:', { email, password });
-    
-    // Simulate successful login
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-    navigate('/');
+
+    try {
+      await login(email, password);
+      navigate('/notes');
+    } catch (err) {
+      setError('Login fehlgeschlagen');
+    }
   };
 
   return (
