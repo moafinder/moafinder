@@ -87,6 +87,41 @@ const Events: CollectionConfig = {
       },
     },
     {
+      name: 'recurrence',
+      type: 'group',
+      label: 'Wiederholung',
+      admin: {
+        condition: (_, siblingData) => siblingData?.eventType !== 'einmalig',
+      },
+      fields: [
+        {
+          name: 'daysOfWeek',
+          type: 'select',
+          hasMany: true,
+          label: 'Wochentage',
+          options: [
+            { label: 'Montag', value: 'mon' },
+            { label: 'Dienstag', value: 'tue' },
+            { label: 'Mittwoch', value: 'wed' },
+            { label: 'Donnerstag', value: 'thu' },
+            { label: 'Freitag', value: 'fri' },
+            { label: 'Samstag', value: 'sat' },
+            { label: 'Sonntag', value: 'sun' },
+          ],
+        },
+        {
+          name: 'repeatUntil',
+          type: 'date',
+          label: 'Wiederholen bis',
+          admin: {
+            date: {
+              pickerAppearance: 'day',
+            },
+          },
+        },
+      ],
+    },
+    {
       name: 'time',
       type: 'group',
       label: 'Uhrzeit',
