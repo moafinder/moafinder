@@ -11,6 +11,9 @@ import RegisterPage from './pages/RegisterPage';
 import EventDetail from './pages/EventDetail';
 import PlaceProfile from './pages/PlaceProfile';
 import NotesPage from './pages/NotesPage';
+import EventsList from './pages/EventsList';
+import EventCreate from './pages/EventCreate';
+import EventEdit from './pages/EventEdit';
 import './App.css';
 
 function App() {
@@ -28,6 +31,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/notes" element={<NotesPage />} />
+          <Route path="/events" element={<EventsList />} />
+          <Route path="/events/new" element={<EventCreate />} />
+          <Route path="/events/:id/edit" element={<EventEdit />} />
         </Routes>
       </main>
       <Footer />
