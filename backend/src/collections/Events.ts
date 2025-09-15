@@ -115,7 +115,7 @@ const Events: CollectionConfig = {
           label: 'Wiederholen bis',
           admin: {
             date: {
-              pickerAppearance: 'day',
+              pickerAppearance: 'dayOnly',
             },
           },
         },
@@ -215,7 +215,7 @@ const Events: CollectionConfig = {
       label: 'Ablaufdatum',
       admin: {
         date: {
-          pickerAppearance: 'day',
+          pickerAppearance: 'dayOnly',
         },
       },
     },
@@ -230,7 +230,7 @@ const Events: CollectionConfig = {
   ],
   hooks: {
     beforeValidate: [
-      ({ data }: { data: any }) => {
+      ({ data }: { data?: any }) => {
         if (!data?.expiryDate) {
           const baseDate = data?.endDate || data?.startDate
           if (baseDate) {
