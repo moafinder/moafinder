@@ -2,7 +2,6 @@ import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 require('@rushstack/eslint-patch/modern-module-resolution')
-
 import js from '@eslint/js'
 import nextPlugin from '@next/eslint-plugin-next'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
