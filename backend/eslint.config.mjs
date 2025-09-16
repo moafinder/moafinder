@@ -8,10 +8,18 @@ const __dirname = dirname(__filename)
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  recommendedConfig: {},
 })
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  ...compat.extends(
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@next/next/recommended',
+    'plugin:@next/next/core-web-vitals',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
+  ),
   {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
@@ -29,6 +37,13 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: '^(_|ignore)',
         },
       ],
+    },
+  },
+  {
+    settings: {
+      react: {
+        version: 'detect',
+      },
     },
   },
   {
