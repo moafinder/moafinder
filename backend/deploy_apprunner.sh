@@ -8,7 +8,9 @@
 # REQUIREMENTS:
 #   - AWS CLI v2 authenticated for the target account
 #   - Docker logged in locally
+
 #   - python3 available in PATH (used to generate AWS JSON payloads)
+
 #   - .env present with quoted values (or set envs inline below)
 #
 # .env example (QUOTED!):
@@ -28,6 +30,7 @@ SERVICE_ARN="arn:aws:apprunner:${AWS_REGION}:${ACCOUNT_ID}:service/moabit-backen
 AMPLIFY_URL="https://main.d1i5ilm5fqb0i9.amplifyapp.com"  # only used for CORS
 APP_PORT="3000"
 HOSTNAME_VALUE="0.0.0.0"
+
 
 # HEALTH CHECK MODE:
 #   TCP first to prove the container boots, then switch to HTTP /api/health at the end.
