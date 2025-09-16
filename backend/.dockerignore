@@ -1,0 +1,16 @@
+# Ignore dependencies and caches copied from the host
+node_modules
+.pnpm-store
+
+# Ignore build output
+.next
+out
+
+# Miscellaneous files not required in the container context
+.git
+.gitignore
+README.md
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+
