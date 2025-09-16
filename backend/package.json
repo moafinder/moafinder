@@ -70,9 +70,6 @@
       "sharp",
       "esbuild",
       "unrs-resolver"
-    ],
-    "patchedDependencies": {
-      "@rushstack/eslint-patch": "patches/@rushstack__eslint-patch.patch"
-    }
+    ]
   }
 }
