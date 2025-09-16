@@ -1,0 +1,22 @@
+diff --git a/lib/_patch-base.js b/lib/_patch-base.js
+index d62619e4001d1c39cb570df3bb0e4c338096e94d..f054df2c51861b28ddd7aafdcf15aad9db9f4aee 100644
+--- a/lib/_patch-base.js
++++ b/lib/_patch-base.js
+@@ -241,9 +241,14 @@ if (!eslintFolder) {
+         }
+         if (!currentModule.parent) {
+             // This was tested with ESLint 6.1.0 .. 7.12.1.
+-            throw new Error('Failed to patch ESLint because the calling module was not recognized.\n' +
+-                'If you are using a newer ESLint version that may be unsupported, please create a GitHub issue:\n' +
+-                'https://github.com/microsoft/rushstack/issues');
++            try {
++                exports.eslintFolder = eslintFolder = path_1.default.dirname(require.resolve('eslint/package.json', { paths: [process.cwd()] }));
++            }
++            catch (error) {
++                console.warn('Failed to locate ESLint package when applying Rushstack patch. Continuing without patch.');
++                break;
++            }
++            break;
+         }
+         currentModule = currentModule.parent;
+     }
