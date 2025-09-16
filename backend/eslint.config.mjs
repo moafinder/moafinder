@@ -1,6 +1,3 @@
-import { createRequire } from 'module'
-const require = createRequire(import.meta.url)
-require('@rushstack/eslint-patch/modern-module-resolution')
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { FlatCompat } from '@eslint/eslintrc'
@@ -10,10 +7,18 @@ const __dirname = dirname(__filename)
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  recommendedConfig: {},
 })
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  ...compat.extends(
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@next/next/recommended',
+    'plugin:@next/next/core-web-vitals',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
+  ),
   {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
@@ -31,6 +36,13 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: '^(_|ignore)',
         },
       ],
+    },
+  },
+  {
+    settings: {
+      react: {
+        version: 'detect',
+      },
     },
   },
   {
