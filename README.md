@@ -7,6 +7,8 @@ Create a `.env` file in `backend/` or configure these variables in your deployme
 DATABASE_URI=<mongo_connection_string>
 PAYLOAD_SECRET=<jwt_secret>
 PORT=3000
+HEALTHCHECK_WARMUP_MS=120000 # optional: milliseconds to treat the app as "starting"
+HEALTHCHECK_PING_TIMEOUT_MS=1500 # optional: Mongo ping timeout for /api/health
 
 # For development
 PAYLOAD_PUBLIC_SERVER_URL=http://localhost:3000
@@ -106,6 +108,8 @@ Create or update the App Runner service:
    | `DATABASE_URI` | MongoDB connection string |
    | `PAYLOAD_SECRET` | Secret used for Payload auth cookies |
    | `PORT` | `3000` |
+   | `HEALTHCHECK_WARMUP_MS` | `180000` (optional warm-up in ms for health checks) |
+   | `HEALTHCHECK_PING_TIMEOUT_MS` | `1500` (optional Mongo ping timeout) |
    | `PAYLOAD_PUBLIC_SERVER_URL` | `https://<app-runner-domain>` |
    | `CORS_ORIGINS` | `https://main.d1i5ilm5fqb0i9.amplifyapp.com` (add other origins separated by commas) |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | SMTP credentials |
@@ -114,6 +118,33 @@ Create or update the App Runner service:
    | `EVENT_APPROVAL_NOTIFICATION_EMAILS` | Distribution list for event approval notifications |
 
 4. Deploy and copy the generated App Runner domain (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`). Use it in the Amplify rewrite rule and as `PAYLOAD_PUBLIC_SERVER_URL`.
+
+#### App Runner health check configuration
+
+App Runner starts health checks as soon as the container is reachable. When the
+service is still connecting to MongoDB these probes can fail, which causes App
+Runner to roll the deployment back. The backend exposes `/api/health`, which
+returns `{"status":"starting"}` during the warm-up window and only flips to an
+error after that window elapses. Configure the health check like this:
+
+1. In the **Health check** section choose **HTTP** and set **Path** to
+   `/api/health`.
+2. Keep the default timing (interval 10s, timeout 5s) and ensure the **Healthy
+   threshold** is `1`.
+3. Set the environment variables `HEALTHCHECK_WARMUP_MS=180000` (3 minutes) and
+   `HEALTHCHECK_PING_TIMEOUT_MS=1500` so the endpoint tolerates MongoDB startup
+   latency without failing the deployment. Adjust the warm-up duration if your
+   database takes longer or shorter to become reachable.
+4. If the first build takes long (for example while Payload warms caches) start
+   with a **TCP** health check, wait until the service status is `RUNNING`, and
+   then switch back to **HTTP** with the `/api/health` path. The helper script
+   `backend/deploy_apprunner.sh` already performs this two-step switch for you.
+5. After the service is live, verify with `curl https://<app-runner-domain>/api/health`.
+
+If App Runner reports `Web ACLs are not available ... because the service does
+not exist or is in an invalid state`, delete the failed service (or create a new
+one) and redeploy using the sequence above. The message appears after repeated
+failed deployments leave the service in the `CREATE_FAILED` state.
 
 ### 3. Verify routing between frontend and backend
 1. Update the Amplify rewrite rule to use the App Runner URL and redeploy if necessary.
