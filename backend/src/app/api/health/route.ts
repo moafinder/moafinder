@@ -1,16 +1,37 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
-/**
- * Lightweight health check that ensures the server booted
- * and can talk to MongoDB. Keeps the response fast so App Runner
- * health checks do not time out while Payload is starting up.
- */
-export const GET = async () => {
-  try {
-    const payload = await getPayload({
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+type GlobalWithCachedPayload = typeof globalThis & {
+  __payloadHealthInstance?: ReturnType<typeof getPayload>
+}
+
+const globalWithCachedPayload = globalThis as GlobalWithCachedPayload
+
+const getCachedPayload = () => {
+  if (!globalWithCachedPayload.__payloadHealthInstance) {
+    globalWithCachedPayload.__payloadHealthInstance = getPayload({
       config: configPromise,
     })
+  }
+
+  return globalWithCachedPayload.__payloadHealthInstance
+}
+
+const parseDuration = (value: string | undefined, fallback: number) => {
+  const parsed = Number.parseInt(value ?? '', 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
+}
+
+const healthResponse = async () => {
+  const warmupWindowMs = parseDuration(process.env.HEALTHCHECK_WARMUP_MS, 2 * 60 * 1000)
+  const pingTimeoutMs = parseDuration(process.env.HEALTHCHECK_PING_TIMEOUT_MS, 1500)
+  const warmupActive = process.uptime() * 1000 < warmupWindowMs
+
+  try {
+    const payload = await getCachedPayload()
 
     // Run a cheap command to assert the DB connection is alive.
     const client =
@@ -19,18 +40,52 @@ export const GET = async () => {
       // @ts-expect-error - payload types don't expose the internal client.
       payload.db?.client ?? payload.mongoConnection?.getClient?.()
 
-    if (client) {
-      await client.db().command({ ping: 1 })
+    if (!client) {
+      throw new Error('Mongo client is not available yet')
     }
 
-    return Response.json({ status: 'ok' }, { status: 200 })
+    await Promise.race([
+      client.db().command({ ping: 1 }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Mongo ping timed out after ${pingTimeoutMs}ms`)), pingTimeoutMs),
+      ),
+    ])
+
+    return Response.json(
+      { status: 'ok', uptimeMs: Math.round(process.uptime() * 1000) },
+      { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    )
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
+    if (warmupActive) {
+      return Response.json(
+        {
+          status: 'starting',
+          message,
+          uptimeMs: Math.round(process.uptime() * 1000),
+        },
+        { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      )
+    }
+
     return Response.json(
       {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message,
+        uptimeMs: Math.round(process.uptime() * 1000),
       },
-      { status: 503 },
+      { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } },
     )
   }
+}
+
+export const GET = healthResponse
+
+export const HEAD = async () => {
+  const response = await healthResponse()
+  return new Response(null, {
+    status: response.status,
+    headers: response.headers,
+  })
 }
