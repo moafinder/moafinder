@@ -115,6 +115,24 @@ Create or update the App Runner service:
 
 4. Deploy and copy the generated App Runner domain (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`). Use it in the Amplify rewrite rule and as `PAYLOAD_PUBLIC_SERVER_URL`.
 
+#### App Runner health check configuration
+
+App Runner starts health checks as soon as the container is reachable. When the
+service is still connecting to MongoDB these probes can fail, which causes App
+Runner to roll the deployment back. The backend now exposes a lightweight
+`/api/health` endpoint that simply confirms the Node process is up and MongoDB
+responds to a ping. Configure the health check like this:
+
+1. In the **Health check** section choose **HTTP** and set **Path** to
+   `/api/health`.
+2. Keep the default timing (interval 10s, timeout 5s) and ensure the **Healthy
+   threshold** is `1`.
+3. If the first build takes long (for example while Payload warms caches) start
+   with a **TCP** health check, wait until the service status is `RUNNING`, and
+   then switch back to **HTTP** with the `/api/health` path. The helper script
+   `backend/deploy_apprunner.sh` already performs this two-step switch for you.
+4. After the service is live, verify with `curl https://<app-runner-domain>/api/health`.
+
 ### 3. Verify routing between frontend and backend
 1. Update the Amplify rewrite rule to use the App Runner URL and redeploy if necessary.
 2. Visit <https://main.d1i5ilm5fqb0i9.amplifyapp.com/> and open the browser Network tab.
