@@ -49,6 +49,7 @@ const corsOrigins = Array.from(
 const corsConfig: CORSConfig = {
   origins: corsOrigins,
   headers: ['Content-Type', 'Authorization', 'X-Requested-With'],
+
 }
 
 export default buildConfig({
