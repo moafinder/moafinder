@@ -43,8 +43,10 @@ The Payload config is tailored specifically to the needs of most websites. It is
 Cross-origin requests from the hosted frontends (Amplify and local development) are allowed out of the box. The list of trusted
 origins is derived from the following environment variables—`FRONTEND_URL`, `NEXT_PUBLIC_SITE_URL`, `PAYLOAD_PUBLIC_SITE_URL`,
 `PAYLOAD_PUBLIC_SERVER_URL`, and `CORS_ORIGINS`—with sensible defaults for the production Amplify domain and common local ports.
-If you expose the API to additional domains, append them to `CORS_ORIGINS` as a comma-separated list so that the registration
-endpoint continues to respond to browser preflight checks.
+The Payload server reuses this list for CSRF protection and also exposes the `Authorization`, `Content-Type`, and
+`X-Requested-With` headers so authenticated requests and JSON payloads survive preflight checks. If you expose the API to
+additional domains, append them to `CORS_ORIGINS` as a comma-separated list so that the registration endpoint continues to
+respond to browser preflight checks.
 
 ### Collections
 
