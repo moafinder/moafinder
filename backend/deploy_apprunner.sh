@@ -73,6 +73,8 @@ fi
 PORT_VALUE="${PORT:-${APP_PORT}}"
 APP_PORT="${PORT_VALUE}"
 CORS_ORIGINS_VALUE="${CORS_ORIGINS:-${AMPLIFY_URL}}"
+HEALTHCHECK_WARMUP_MS_VALUE="${HEALTHCHECK_WARMUP_MS:-}"
+HEALTHCHECK_PING_TIMEOUT_MS_VALUE="${HEALTHCHECK_PING_TIMEOUT_MS:-}"
 
 ############################
 # HELPERS
@@ -105,7 +107,7 @@ build_image_update_payload () {
   local image_identifier="$1"
   local public_url="$2"
 
-  python3 - "$SERVICE_ARN" "$image_identifier" "$APP_PORT" "$public_url" "${CORS_ORIGINS_VALUE}" "${PORT_VALUE}" "${HOSTNAME_VALUE}" "${DATABASE_URI:-}" "${PAYLOAD_SECRET:-}" "${DATABASE_URI_SECRET_ARN}" "${PAYLOAD_SECRET_SECRET_ARN}" <<'PY'
+  python3 - "$SERVICE_ARN" "$image_identifier" "$APP_PORT" "$public_url" "${CORS_ORIGINS_VALUE}" "${PORT_VALUE}" "${HOSTNAME_VALUE}" "${DATABASE_URI:-}" "${PAYLOAD_SECRET:-}" "${DATABASE_URI_SECRET_ARN}" "${PAYLOAD_SECRET_SECRET_ARN}" "${HEALTHCHECK_WARMUP_MS_VALUE}" "${HEALTHCHECK_PING_TIMEOUT_MS_VALUE}" <<'PY'
 import json
 import sys
 
@@ -121,6 +123,8 @@ import sys
     payload_secret,
     database_uri_secret_arn,
     payload_secret_secret_arn,
+    healthcheck_warmup_ms,
+    healthcheck_ping_timeout_ms,
 ) = sys.argv[1:]
 
 runtime_env_vars = {
@@ -143,6 +147,12 @@ if payload_secret_secret_arn:
     runtime_env_secrets.append({"Name": "PAYLOAD_SECRET", "Value": payload_secret_secret_arn})
 else:
     runtime_env_vars["PAYLOAD_SECRET"] = payload_secret
+
+if healthcheck_warmup_ms:
+    runtime_env_vars["HEALTHCHECK_WARMUP_MS"] = healthcheck_warmup_ms
+
+if healthcheck_ping_timeout_ms:
+    runtime_env_vars["HEALTHCHECK_PING_TIMEOUT_MS"] = healthcheck_ping_timeout_ms
 
 image_configuration = {
     "Port": app_port,
