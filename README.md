@@ -79,13 +79,17 @@ pnpm lint
 The Amplify app is already connected to your repository and available at <https://main.d1i5ilm5fqb0i9.amplifyapp.com/>.
 
 1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain (for example `https://trcfif3bvg.eu-central-1.awsapprunner.com`).
-2. Add a rewrite so the static site can talk to the backend: **App settings → Rewrites and redirects** → add
+
+2. Add rewrites so the static site can talk to the backend and serve client-side routes: **App settings → Rewrites and redirects** → add
 
    | Source | Target | Type |
    |--------|--------|------|
    | `/api/<*>` | `https://<app-runner-domain>/api/<*>` | 200 (Rewrite) |
+   | `</^[^.]+$/>` | `/index.html` | 200 (Rewrite) |
 
-   Replace `<app-runner-domain>` with the URL created in step 2 below once the backend is online.
+   Keep the `/api/<*>` row above the SPA fallback rule so API traffic reaches App Runner.
+3. After saving the rewrites, redeploy the frontend (Amplify does this automatically when the rewrite table changes).
+4. Once the build finishes, open the deployed site, trigger an action such as registration or login, and confirm the requests in the browser DevTools Network tab hit `https://<app-runner-domain>/api/...`.
 
 Amplify rebuilds automatically whenever you push to the connected Git branch.
 
