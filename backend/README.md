@@ -38,6 +38,14 @@ To do so, follow these steps:
 
 The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
 
+### CORS configuration
+
+Cross-origin requests from the hosted frontends (Amplify and local development) are allowed out of the box. The list of trusted
+origins is derived from the following environment variables—`FRONTEND_URL`, `NEXT_PUBLIC_SITE_URL`, `PAYLOAD_PUBLIC_SITE_URL`,
+`PAYLOAD_PUBLIC_SERVER_URL`, and `CORS_ORIGINS`—with sensible defaults for the production Amplify domain and common local ports.
+If you expose the API to additional domains, append them to `CORS_ORIGINS` as a comma-separated list so that the registration
+endpoint continues to respond to browser preflight checks.
+
 ### Collections
 
 See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
