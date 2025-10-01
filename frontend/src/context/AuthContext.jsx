@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { buildApiUrl } from '../api/baseUrl'
 
 const AuthContext = createContext(null)
 
@@ -13,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const login = async (email, password) => {
-    const res = await fetch('/api/users/login', {
+    const res = await fetch(buildApiUrl('/api/users/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = async () => {
-    await fetch('/api/users/logout', {
+    await fetch(buildApiUrl('/api/users/logout'), {
       method: 'POST',
       credentials: 'include',
     })

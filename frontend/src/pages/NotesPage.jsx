@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { buildApiUrl } from '../api/baseUrl'
 
 const NotesPage = () => {
   const { user } = useAuth()
@@ -15,7 +16,7 @@ const NotesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const res = await fetch('http://localhost:3000/api/notes', {
+    const res = await fetch(buildApiUrl('/api/notes'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -27,6 +27,14 @@ EVENT_APPROVAL_NOTIFICATION_EMAILS=team@moafinder.de
 
 `DATABASE_URI` should point to the MongoDB instance you want to use. Any operations run against the backend will write directly to this database, so consider using a test database for local development.
 
+For the frontend, create a `frontend/.env` file or configure the variable in your hosting provider:
+
+```
+VITE_API_BASE_URL=<https://your-api-domain>
+```
+
+When running the Vite dev server without a dedicated backend domain you can leave this empty (`VITE_API_BASE_URL=`) so requests continue to target the relative `/api/...` paths proxied by the development server.
+
 ## Local Development
 1. **Install dependencies**
    ```
@@ -70,7 +78,7 @@ pnpm lint
 ### 1. Frontend (AWS Amplify)
 The Amplify app is already connected to your repository and available at <https://main.d1i5ilm5fqb0i9.amplifyapp.com/>.
 
-1. In the Amplify console open **App settings → Environment variables** and provide any frontend variables you need (for example `VITE_API_BASE_URL` if you introduce one later).
+1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain (for example `https://trcfif3bvg.eu-central-1.awsapprunner.com`).
 2. Add a rewrite so the static site can talk to the backend: **App settings → Rewrites and redirects** → add
 
    | Source | Target | Type |

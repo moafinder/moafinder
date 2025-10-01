@@ -16,3 +16,6 @@ applications:
       cache:
         paths:
           - node_modules/**/*
+      environment:
+        variables:
+          VITE_API_BASE_URL: https://trcfif3bvg.eu-central-1.awsapprunner.com
