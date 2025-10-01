@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { buildApiUrl } from '../api/baseUrl';
 
 /**
  * Registration page. Collects user information for account creation
@@ -42,7 +43,7 @@ const RegisterPage = () => {
     }
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/users/register', {
+      const response = await fetch(buildApiUrl('/api/users/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

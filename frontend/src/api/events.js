@@ -1,19 +1,21 @@
+import { buildApiUrl } from './baseUrl';
+
 const API_URL = '/api/events';
 
 export async function listEvents() {
-  const res = await fetch(API_URL, { credentials: 'include' });
+  const res = await fetch(buildApiUrl(API_URL), { credentials: 'include' });
   if (!res.ok) throw new Error('Failed to fetch events');
   return res.json();
 }
 
 export async function getEvent(id) {
-  const res = await fetch(`${API_URL}/${id}`, { credentials: 'include' });
+  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), { credentials: 'include' });
   if (!res.ok) throw new Error('Failed to fetch event');
   return res.json();
 }
 
 export async function createEvent(data) {
-  const res = await fetch(API_URL, {
+  const res = await fetch(buildApiUrl(API_URL), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -24,7 +26,7 @@ export async function createEvent(data) {
 }
 
 export async function updateEvent(id, data) {
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -35,7 +37,7 @@ export async function updateEvent(id, data) {
 }
 
 export async function deleteEvent(id) {
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), {
     method: 'DELETE',
     credentials: 'include',
   });

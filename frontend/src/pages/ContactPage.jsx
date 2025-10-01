@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { buildApiUrl } from '../api/baseUrl';
 
 /**
  * Contact page with address and a contact form. The form currently
@@ -26,7 +27,7 @@ const ContactPage = () => {
     }
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/contact', {
+      const response = await fetch(buildApiUrl('/api/contact'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
