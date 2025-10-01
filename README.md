@@ -79,6 +79,7 @@ pnpm lint
 The Amplify app is already connected to your repository and available at <https://main.d1i5ilm5fqb0i9.amplifyapp.com/>.
 
 1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain (for example `https://trcfif3bvg.eu-central-1.awsapprunner.com`).
+
 2. Add rewrites so the static site can talk to the backend and serve client-side routes: **App settings → Rewrites and redirects** → add
 
    | Source | Target | Type |

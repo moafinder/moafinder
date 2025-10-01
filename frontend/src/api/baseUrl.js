@@ -54,4 +54,5 @@ export function buildApiUrl(path = '') {
     }
     return `${sanitizedBaseUrl}${normalizedPath}`
   }
+
 }
