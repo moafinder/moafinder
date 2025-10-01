@@ -13,11 +13,17 @@ import { mongooseAdapter } from '@payloadcms/db-mongodb'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const stripTrailingSlash = (origin: string) => origin.replace(/\/$/, '')
+
+const isNonEmptyString = (value: string | null | undefined): value is string =>
+  typeof value === 'string' && value.length > 0
+
 const parseOrigins = (value?: string | null) =>
   value
     ?.split(',')
-    .map((origin) => origin.trim().replace(/\/$/, ''))
-    .filter(Boolean) ?? []
+    .map((origin) => origin.trim())
+    .filter(isNonEmptyString)
+    .map(stripTrailingSlash) ?? []
 
 const defaultCorsOrigins = [
   process.env.FRONTEND_URL,
@@ -30,8 +36,8 @@ const defaultCorsOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
 ]
-  .filter(Boolean)
-  .map((origin) => origin.replace(/\/$/, ''))
+  .filter(isNonEmptyString)
+  .map(stripTrailingSlash)
 
 const corsOrigins = Array.from(
   new Set([
