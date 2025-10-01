@@ -65,3 +65,27 @@ That's it! The Docker instance will help you get up and running quickly while al
 ## Questions
 
 If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+
+## Pre-deployment verification
+
+Before pushing a new container image to App Runner, run the automated checks to confirm the MongoDB URI and health endpoint behave as expected:
+
+```bash
+cd backend
+pnpm predeploy:check
+```
+
+The script loads variables from `.env` (or a custom file via `--env-file`), verifies that the MongoDB instance accepts TLS connections, and optionally polls your configured `PAYLOAD_PUBLIC_SERVER_URL` health path. Use the flags below to tailor the run:
+
+| Flag | Description |
+| --- | --- |
+| `--database-uri <uri>` | Temporarily override `DATABASE_URI` without editing `.env`. |
+| `--server-url <url>` | Check a different base URL—for example, a freshly issued App Runner domain. |
+| `--write-env` | Persist the `--server-url` override back into the selected env file. |
+| `--skip-mongo` / `--skip-health` | Bypass individual checks when the target service is intentionally offline. |
+
+Example: update the cached App Runner domain and verify both checks in one go:
+
+```bash
+pnpm predeploy:check --server-url https://new-id.awsapprunner.com --write-env
+```
