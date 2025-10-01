@@ -127,6 +127,7 @@ Runner to roll the deployment back. The backend exposes `/api/health`, which
 returns `{"status":"starting"}` during the warm-up window and only flips to an
 error after that window elapses. Configure the health check like this:
 
+
 1. In the **Health check** section choose **HTTP** and set **Path** to
    `/api/health`.
 2. Keep the default timing (interval 10s, timeout 5s) and ensure the **Healthy
