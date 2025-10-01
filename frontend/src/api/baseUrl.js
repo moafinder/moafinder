@@ -1,4 +1,5 @@
-const rawBaseUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || ''
+const rawBaseUrl = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_BASE_URL ?? '' : ''
+const importMetaMode = typeof import.meta !== 'undefined' ? import.meta.env.MODE ?? '' : ''
 
 let sanitizedBaseUrl = ''
 
@@ -26,9 +27,7 @@ if (
   window.location &&
   window.location.origin &&
   sanitizedBaseUrl === '' &&
-  typeof import.meta !== 'undefined' &&
-  import.meta.env &&
-  import.meta.env.MODE === 'production'
+  importMetaMode === 'production'
 ) {
   console.warn(
     'VITE_API_BASE_URL is empty; frontend requests will target the current origin. Ensure Amplify exports VITE_API_BASE_URL so API calls reach App Runner.'
