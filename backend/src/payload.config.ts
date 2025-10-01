@@ -1,4 +1,4 @@
-import { buildConfig, type CORSConfig } from 'payload'
+import { buildConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import Organizations from './collections/Organizations'
@@ -46,10 +46,11 @@ const corsOrigins = Array.from(
   ]),
 )
 
-const corsConfig: CORSConfig = {
-  origins: corsOrigins,
-  headers: ['Content-Type', 'Authorization', 'X-Requested-With'],
-
+const corsConfig = {
+  origin: corsOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }
 
 export default buildConfig({
