@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-const ENFORCED_DEFAULT_ROLE = 'organizer'
+export const ENFORCED_DEFAULT_ROLE = 'organizer'
 
 export const Users: CollectionConfig = {
   slug: 'users',

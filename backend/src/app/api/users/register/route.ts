@@ -1,5 +1,6 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import { ENFORCED_DEFAULT_ROLE } from '@/collections/Users'
 
 const ALLOWED_METHODS = 'POST,OPTIONS'
 const DEFAULT_ALLOWED_HEADERS = 'Content-Type'
@@ -70,7 +71,28 @@ function jsonResponse<T>(request: Request, body: T, init: ResponseInit = {}) {
   })
 }
 
-function parseBody(value: unknown) {
+type ParsedRegistration = {
+  name: string
+  email: string
+  password: string
+}
+
+type ParseError = {
+  message: string
+  field?: string
+}
+
+type ParseResult =
+  | {
+      success: true
+      data: ParsedRegistration
+    }
+  | {
+      success: false
+      errors: ParseError[]
+    }
+
+function parseBody(value: unknown): ParseResult {
   if (!value || typeof value !== 'object') {
     return {
       success: false,
@@ -80,7 +102,7 @@ function parseBody(value: unknown) {
 
   const { name, email, password } = value as Record<string, unknown>
 
-  const errors: Array<{ message: string; field?: string }> = []
+  const errors: ParseError[] = []
 
   const trimmedName = typeof name === 'string' ? name.trim() : ''
   if (!trimmedName) {
@@ -148,7 +170,7 @@ export async function POST(request: Request) {
         name: parsed.data.name,
         email: parsed.data.email,
         password: parsed.data.password,
-        role: undefined,
+        role: ENFORCED_DEFAULT_ROLE,
       },
     })
   } catch (error) {
