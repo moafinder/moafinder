@@ -131,7 +131,7 @@ const RegisterPage = () => {
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button
           type="submit"
-          className="bg-primary-700 text-white px-4 py-2 rounded hover:bg-primary-800 disabled:opacity-75 disabled:cursor-not-allowed w-full"
+          className="bg-brand text-white px-4 py-2 rounded hover:bg-brand-dark transition-colors disabled:opacity-75 disabled:cursor-not-allowed w-full"
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Wird erstellt…' : 'Konto erstellen'}

@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+const ENFORCED_DEFAULT_ROLE = 'organizer'
+
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
@@ -10,12 +12,38 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
   },
   auth: true,
+  hooks: {
+    beforeChange: [({ data, req, operation }) => {
+      if (!data) return data
+
+      if (operation === 'create') {
+        // Only admins may choose a custom role; everyone else is forced to organizer.
+        if (req.user?.role === 'admin') {
+          if (!data.role) {
+            data.role = ENFORCED_DEFAULT_ROLE
+          }
+        } else {
+          data.role = ENFORCED_DEFAULT_ROLE
+        }
+      } else if (operation === 'update' && req.user?.role !== 'admin') {
+        delete data.role
+      }
+
+      return data
+    }],
+  },
   fields: [
+    {
+      name: 'name',
+      label: 'Name',
+      type: 'text',
+      required: false,
+    },
     {
       name: 'role',
       type: 'select',
       required: true,
-      defaultValue: 'organizer',
+      defaultValue: ENFORCED_DEFAULT_ROLE,
       options: [
         {
           label: 'Admin',
@@ -27,10 +55,11 @@ export const Users: CollectionConfig = {
         },
         {
           label: 'Organizer',
-          value: 'organizer',
+          value: ENFORCED_DEFAULT_ROLE,
         },
       ],
       access: {
+        create: ({ req }) => req.user?.role === 'admin',
         update: ({ req }) => req.user?.role === 'admin',
       },
     },

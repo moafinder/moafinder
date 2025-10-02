@@ -1,7 +1,16 @@
 # Moabit Finder
 
 ## Environment Variables
-Create a `.env` file in `backend/` or configure these variables in your deployment environment:
+
+Maintain every environment from a single file under `env/targets`:
+
+1. Copy `env/targets/local.example.envset` to `env/targets/local.envset` (or create another `<name>.envset`).
+2. Fill out the `[backend]`, `[frontend]`, optional `[apprunner]`, and `[common]` sections with the credentials you want to use.
+3. Run `node scripts/apply-env.mjs <name>` from the repo root.
+
+The script renders `backend/.env`, `backend/.env.local`, `frontend/.env.local`, and `env/out/<name>-apprunner.env` so local development mirrors production (CORS restrictions included) while keeping secrets outside of git. Rerun it whenever you swap targets. See `env/README.md` for a quick reference.
+
+If you prefer to manage the files manually, create a `.env` file in `backend/` or configure these variables in your deployment environment:
 
 ```
 DATABASE_URI=<mongo_connection_string>
@@ -35,7 +44,25 @@ VITE_API_BASE_URL=<https://your-api-domain>
 
 When running the Vite dev server without a dedicated backend domain you can leave this empty (`VITE_API_BASE_URL=`) so requests continue to target the relative `/api/...` paths proxied by the development server.
 
+## Production Architecture
+- **Frontend:** React single-page app hosted on AWS Amplify (`https://main.d1i5ilm5fqb0i9.amplifyapp.com`). Amplify rewrites `/api/*` calls to the backend.
+- **Backend:** Payload CMS + Next.js running on AWS App Runner (container image in Amazon ECR). The current service URL can be found in the App Runner console (e.g. `https://<service-id>.<region>.awsapprunner.com`).
+- **Database:** MongoDB Atlas cluster (MongoDB Atlas UI → Database → Connect for the latest connection string). Both local development and App Runner use this URI.
+
+Traffic flow: Browser → Amplify (static assets) → App Runner (`/api` rewrites) → MongoDB Atlas.
+
 ## Local Development
+
+### One-command setup
+Run everything (env files, MongoDB, backend, frontend) with:
+```
+node scripts/local-stack.mjs up [target]
+```
+- `target` defaults to `local`; pass another envset name or `--target=production` when needed.
+- Add `--skip-install` to reuse existing `node_modules`, or `--keep-mongo` to keep the Mongo container running after shutdown.
+- Stop the stack with `Ctrl+C` (the script tears everything down) or `node scripts/local-stack.mjs down`.
+
+### Manual steps
 1. **Install dependencies**
    ```
    pnpm install
@@ -70,15 +97,32 @@ pnpm lint
 
 ## Deploying to AWS
 
-### Prerequisites
-- AWS CLI v2 installed locally and configured with credentials that can access Amplify, ECR and App Runner (`aws configure`).
-- Docker installed locally and logged in to the daemon.
-- MongoDB connection string available for `DATABASE_URI`.
+### 0. Prerequisites checklist
+- **AWS account & permissions:** IAM user/role with access to Amplify, App Runner, ECR, Secrets Manager (optional), and CloudWatch Logs.
+- **AWS CLI v2:** install from <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html>. macOS example:
+  ```bash
+  curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+  sudo installer -pkg AWSCLIV2.pkg -target /
+  aws --version
+  ```
+  Configure credentials with `aws configure` (AWS access key ID, secret, default region `eu-central-1`).
+- **Docker:** <https://docs.docker.com/get-docker/>. Required for building the App Runner image locally.
+- **Node.js & pnpm:** Node 20.x (or >=18.20) and pnpm 9/10. Enable corepack: `corepack enable && corepack prepare pnpm@latest --activate`.
+- **MongoDB Atlas admin access:** ability to add/remove database users and IP access list entries.
+- **Domain references:**
+  - Amplify app domain: **AWS Console → Amplify → <App Name> → App details**. Copies to README above.
+  - App Runner service URL & outbound IP list: **App Runner → Services → moabit-backend → Default domain** (step 2 below) and **Networking → Outbound traffic** for egress IPs. Add these IPs to MongoDB Atlas **Network Access** (whitelist) so App Runner can reach the database.
+- **Secrets:**
+  - `PAYLOAD_SECRET` (generate with `openssl rand -hex 32`).
+  - `DATABASE_URI` (Atlas connection string with username/password; include `?retryWrites=true&w=majority` etc.).
+  - Optional SMTP credentials.
+
+Add local machine IP and App Runner egress IPs to the Atlas access list before deploying (`Network Access → Add IP Address`).
 
 ### 1. Frontend (AWS Amplify)
 The Amplify app is already connected to your repository and available at <https://main.d1i5ilm5fqb0i9.amplifyapp.com/>.
 
-1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain (for example `https://trcfif3bvg.eu-central-1.awsapprunner.com`).
+1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain you noted earlier (e.g. `https://<service-id>.eu-central-1.awsapprunner.com`). The change triggers a redeploy.
 
 2. Add rewrites so the static site can talk to the backend and serve client-side routes: **App settings → Rewrites and redirects** → add
 
@@ -88,8 +132,7 @@ The Amplify app is already connected to your repository and available at <https:
    | `</^[^.]+$/>` | `/index.html` | 200 (Rewrite) |
 
    Keep the `/api/<*>` row above the SPA fallback rule so API traffic reaches App Runner.
-3. After saving the rewrites, redeploy the frontend (Amplify does this automatically when the rewrite table changes).
-4. Once the build finishes, open the deployed site, trigger an action such as registration or login, and confirm the requests in the browser DevTools Network tab hit `https://<app-runner-domain>/api/...`.
+3. After saving, Amplify redeploys automatically. When it finishes, open the site, trigger registration/login, and confirm via DevTools that `https://<app-runner-domain>/api/...` responds with `200`/`201`.
 
 Amplify rebuilds automatically whenever you push to the connected Git branch.
 
@@ -113,7 +156,7 @@ Create or update the App Runner service:
 
 1. AWS console → **App Runner → Create service** (or **Deploy latest image** if it already exists).
 2. Select the container image you pushed to ECR and set **Port** to `3000`.
-3. Configure environment variables:
+3. Configure environment variables (App Runner console → **Edit configuration → Environment variables**):
 
    | Variable | Value |
    |----------|-------|
@@ -129,7 +172,9 @@ Create or update the App Runner service:
    | `CONTACT_RECIPIENT_EMAILS` | Address that should receive contact form messages |
    | `EVENT_APPROVAL_NOTIFICATION_EMAILS` | Distribution list for event approval notifications |
 
-4. Deploy and copy the generated App Runner domain (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`). Use it in the Amplify rewrite rule and as `PAYLOAD_PUBLIC_SERVER_URL`.
+4. Deploy and note:
+   - **Default domain** (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`). Add it to Amplify and `env/targets/production.envset` under `[backend]`/`[frontend]`.
+   - **Outbound IP addresses** (Networking tab). Add each IP to MongoDB Atlas Network Access.
 
 #### App Runner health check configuration
 
