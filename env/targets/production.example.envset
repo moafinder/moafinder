@@ -1,0 +1,25 @@
+# Copy to production.envset, fill in production credentials, then run:
+#   node scripts/apply-env.mjs production
+# The script will generate backend/.env.production, frontend/.env.production,
+# and env/out/production-apprunner.env for easy copy/paste into AWS.
+#
+# Notes:
+# - Replace the placeholder App Runner and Amplify domains with the ones shown in the AWS console.
+# - Keep PAYLOAD_PUBLIC_SERVER_URL aligned with the App Runner default domain used in Amplify rewrites.
+
+[common]
+PORT=3000
+
+[backend]
+DATABASE_URI="mongodb+srv://user:pass@cluster.mongodb.net/moafinder?retryWrites=true&w=majority"
+PAYLOAD_SECRET="replace-with-production-secret"
+PAYLOAD_PUBLIC_SERVER_URL=https://your-app.apprunner.aws
+CORS_ORIGINS=https://main.your-amplify-domain.com
+
+[frontend]
+VITE_API_BASE_URL=https://your-app.apprunner.aws/api
+
+[apprunner]
+PAYLOAD_PUBLIC_SERVER_URL=https://your-app.apprunner.aws
+CORS_ORIGINS=https://main.your-amplify-domain.com
+HOSTNAME=0.0.0.0

@@ -152,6 +152,7 @@ export interface OrganizationAuthOperations {
  */
 export interface User {
   id: string;
+  name?: string | null;
   role: 'admin' | 'editor' | 'organizer';
   updatedAt: string;
   createdAt: string;
@@ -264,6 +265,10 @@ export interface Event {
   eventType: 'einmalig' | 'täglich' | 'wöchentlich' | 'monatlich' | 'jährlich';
   startDate: string;
   endDate?: string | null;
+  recurrence?: {
+    daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[] | null;
+    repeatUntil?: string | null;
+  };
   time?: {
     from?: string | null;
     to?: string | null;
@@ -442,6 +447,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -507,6 +513,12 @@ export interface EventsSelect<T extends boolean = true> {
   eventType?: T;
   startDate?: T;
   endDate?: T;
+  recurrence?:
+    | T
+    | {
+        daysOfWeek?: T;
+        repeatUntil?: T;
+      };
   time?:
     | T
     | {

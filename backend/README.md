@@ -17,7 +17,7 @@ After you click the `Deploy` button above, you'll want to have standalone copy o
 ### Development
 
 1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URI` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+2. From the repository root run `node scripts/apply-env.mjs local` after copying `env/targets/local.example.envset` to `env/targets/local.envset` and filling in your credentials. This renders `backend/.env` with a local MongoDB URI, Payload secret, and the correct CORS origins. Alternatively, you can create `backend/.env` manually following the template in the main README. For an everything-at-once experience (env files, MongoDB, backend, frontend), use `node scripts/local-stack.mjs up`.
 
 3. `pnpm install && pnpm dev` to install dependencies and start the dev server
 4. open `http://localhost:3000` to open the app in your browser

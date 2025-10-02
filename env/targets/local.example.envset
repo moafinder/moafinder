@@ -1,0 +1,25 @@
+# Copy this file to local.envset, fill in secrets, then run:
+#   node scripts/apply-env.mjs local
+# Lines starting with # are ignored. Values are written as-is, so
+# wrap any value containing special characters in single or double quotes.
+
+[common]
+PORT=3000
+PAYLOAD_PUBLIC_SERVER_URL=http://localhost:3000
+CORS_ORIGINS=http://localhost:5173
+
+[backend]
+DATABASE_URI=mongodb://127.0.0.1:27017/moafinder-local
+PAYLOAD_SECRET=change-me-local-secret
+# Optional mailer overrides used by Payload
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+[frontend]
+VITE_API_BASE_URL=http://localhost:3000/api
+
+# App Runner section is optional for local stacks. Leave empty or
+# use it to stage overrides you want copied into env/out/local-apprunner.env
+[apprunner]
