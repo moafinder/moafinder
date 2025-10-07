@@ -5,11 +5,19 @@ const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [initializing, setInitializing] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem('user')
-    if (stored) {
-      setUser(JSON.parse(stored))
+    try {
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        setUser(JSON.parse(stored))
+      }
+    } catch (error) {
+      console.warn('Failed to load stored user', error)
+      localStorage.removeItem('user')
+    } finally {
+      setInitializing(false)
     }
   }, [])
 
@@ -41,8 +49,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user')
   }
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, logout, initializing }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => useContext(AuthContext)
-
