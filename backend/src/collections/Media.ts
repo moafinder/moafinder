@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Media: CollectionConfig = {
   slug: 'media',
@@ -26,7 +26,49 @@ const Media: CollectionConfig = {
       },
     ],
   },
+  access: {
+    read: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
+      return {
+        owner: {
+          equals: user.id,
+        },
+      } as any
+    },
+    create: ({ req }: { req: PayloadRequest }) => !!req.user,
+    delete: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
+      return {
+        owner: {
+          equals: user.id,
+        },
+      } as any
+    },
+    update: ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
+      return {
+        owner: {
+          equals: user.id,
+        },
+      } as any
+    },
+  },
   fields: [
+    {
+      name: 'owner',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      admin: {
+        readOnly: true,
+      },
+    },
     {
       name: 'alt',
       type: 'text',
@@ -34,6 +76,15 @@ const Media: CollectionConfig = {
       label: 'Alt Text',
     },
   ],
+  hooks: {
+    beforeChange: [({ data, req, operation }) => {
+      if (!data || !req.user) return data
+      if (operation === 'create') {
+        data.owner = req.user.id
+      }
+      return data
+    }],
+  },
 }
 
 export default Media
