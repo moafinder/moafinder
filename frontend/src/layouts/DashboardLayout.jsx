@@ -17,9 +17,9 @@ const organizerSidebar = [
 ];
 
 const editorSidebar = [
-  { label: 'Veranstaltungsorte', to: '/dashboard/editor/places' },
+  { label: 'Veranstaltungen', to: '/dashboard/editor/events' },
   { label: 'Profile der Organisationen', to: '/dashboard/editor/organizations' },
-  { label: 'Angebote/Veranstaltungen', to: '/dashboard/editor/events' },
+  { label: 'Veranstaltungsorte', to: '/dashboard/editor/places' },
   { label: 'Event-Bilder', to: '/dashboard/editor/media' },
   { label: 'Regelkatalog', to: '/dashboard/editor/guidelines' },
   { label: 'Archiv', to: '/dashboard/editor/archive' },
