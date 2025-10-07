@@ -8,7 +8,7 @@ import OrganizerMediaPage from './OrganizerMediaPage';
 import OrganizerEventCreatePage from './OrganizerEventCreatePage';
 import OrganizerEventEditPage from './OrganizerEventEditPage';
 import EditorEventsPage from './EditorEventsPage';
-import ProtectedRoute from '../../components/ProtectedRoute';
+import EditorOrganizationsPage from './EditorOrganizationsPage';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardRoutes = () => {
@@ -27,6 +27,14 @@ const DashboardRoutes = () => {
           element={
             <RoleGuard roles={['editor', 'admin']}>
               <EditorEventsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/organizations"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorOrganizationsPage />
             </RoleGuard>
           }
         />
