@@ -5,6 +5,8 @@ import OrganizerDashboardPage from './OrganizerDashboardPage';
 import OrganizationProfilePage from './OrganizationProfilePage';
 import OrganizerEventsPage from './OrganizerEventsPage';
 import OrganizerMediaPage from './OrganizerMediaPage';
+import OrganizerEventCreatePage from './OrganizerEventCreatePage';
+import OrganizerEventEditPage from './OrganizerEventEditPage';
 
 const DashboardRoutes = () => {
   return (
@@ -13,6 +15,8 @@ const DashboardRoutes = () => {
         <Route index element={<OrganizerDashboardPage />} />
         <Route path="organization" element={<OrganizationProfilePage />} />
         <Route path="events" element={<OrganizerEventsPage />} />
+        <Route path="events/new" element={<OrganizerEventCreatePage />} />
+        <Route path="events/:id/edit" element={<OrganizerEventEditPage />} />
         <Route path="media" element={<OrganizerMediaPage />} />
         <Route path="" element={<OrganizerDashboardPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

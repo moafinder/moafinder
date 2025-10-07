@@ -165,7 +165,7 @@ const OrganizerDashboardPage = () => {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <a
-                  href={`/events/${event.id}/edit`}
+                  href={`/dashboard/events/${event.id}/edit`}
                   className="rounded-md border border-gray-200 px-3 py-1 font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
                 >
                   Bearbeiten

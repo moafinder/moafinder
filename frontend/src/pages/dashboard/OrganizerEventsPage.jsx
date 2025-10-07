@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const statusLabels = {
   draft: 'Entwurf',
@@ -21,10 +21,10 @@ const badgeClasses = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-const formatDate = (value) => {
+const formatDate = (value, includeTime = false) => {
   if (!value) return '–';
   try {
-    return format(new Date(value), 'dd.MM.yyyy', { locale: de });
+    return format(new Date(value), includeTime ? 'dd.MM.yyyy HH:mm' : 'dd.MM.yyyy', { locale: de });
   } catch (err) {
     return value;
   }
@@ -33,10 +33,25 @@ const formatDate = (value) => {
 const OrganizerEventsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [flash, setFlash] = useState(location.state?.message ?? '');
+
+  useEffect(() => {
+    if (location.state?.message) {
+      const timer = setTimeout(() => setFlash(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state?.message]);
+
+  useEffect(() => {
+    if (location.state?.message) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state?.message, location.pathname, navigate]);
 
   useEffect(() => {
     let mounted = true;
@@ -109,12 +124,16 @@ const OrganizerEventsPage = () => {
           <p className="text-sm text-gray-600">Verwalte Entwürfe, eingereichte Events und veröffentlichte Angebote.</p>
         </div>
         <button
-          onClick={() => navigate('/events/new')}
+          onClick={() => navigate('/dashboard/events/new')}
           className="rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20]"
         >
           Neue Veranstaltung einreichen
         </button>
       </div>
+
+      {flash && (
+        <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">{flash}</div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatPill label="Alle" value={grouped.all.length} active={activeFilter === 'all'} onClick={() => setActiveFilter('all')} />
@@ -172,7 +191,7 @@ const OrganizerEventsPage = () => {
                   <td className="px-6 py-4 text-right text-sm">
                     <div className="flex justify-end gap-2">
                       <Link
-                        to={`/events/${event.id}/edit`}
+                        to={`/dashboard/events/${event.id}/edit`}
                         className="rounded-md border border-gray-300 px-3 py-1 font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
                       >
                         Bearbeiten
