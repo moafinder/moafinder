@@ -2,30 +2,45 @@ import type { CollectionConfig, PayloadRequest } from 'payload'
 
 const Organizations: CollectionConfig = {
   slug: 'organizations',
-  auth: true, // Enable authentication
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'approved', 'createdAt'],
   },
   access: {
     read: () => true,
-    create: () => true,
+    create: ({ req }: { req: PayloadRequest }) => !!req.user,
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
-      if (user?.role === 'admin') return true
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'editor') return true
       return {
-        id: {
-          equals: user?.id,
+        owner: {
+          equals: user.id,
         },
       } as any
     },
   },
   fields: [
     {
+      name: 'owner',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
       name: 'name',
       type: 'text',
       required: true,
       label: 'Name der Organisation',
+    },
+    {
+      name: 'email',
+      type: 'email',
+      required: true,
+      label: 'E-Mail-Adresse',
     },
     {
       name: 'role',
@@ -83,6 +98,18 @@ const Organizations: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    beforeChange: [({ data, req, operation }) => {
+      if (!data) return data
+      if (operation === 'create' && req.user) {
+        data.owner = req.user.id
+      }
+      if (operation === 'update' && req.user && req.user.role === 'organizer') {
+        data.owner = req.user.id
+      }
+      return data
+    }],
+  },
   timestamps: true,
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const primaryNav = [
@@ -34,6 +34,7 @@ const adminSidebar = [
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const role = user?.role ?? 'organizer';
   const sidebarItems = role === 'admin' ? adminSidebar : role === 'editor' ? editorSidebar : organizerSidebar;
@@ -91,12 +92,11 @@ const DashboardLayout = ({ children }) => {
                 to={item.to}
                 className={({ isActive }) =>
                   `block rounded-md px-3 py-2 text-sm font-semibold transition ${
-                    isActive || location.pathname === item.to
+                    isActive || location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
                       ? 'bg-[#E8F5DA] text-[#417225]'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
-                end
               >
                 {item.label}
               </NavLink>

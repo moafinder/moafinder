@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
@@ -25,6 +26,7 @@ const QuickActionCard = ({ title, description, onClick }) => (
 
 const OrganizerDashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [events, setEvents] = useState([]);
@@ -120,17 +122,17 @@ const OrganizerDashboardPage = () => {
         <QuickActionCard
           title="Neue Veranstaltung anlegen"
           description="Reiche ein neues Angebot oder Event ein."
-          onClick={() => (window.location.href = '/events/new')}
+          onClick={() => navigate('/events/new')}
         />
         <QuickActionCard
           title="Organisation aktualisieren"
           description="Passe deine Kontaktdaten und Beschreibung an."
-          onClick={() => (window.location.href = '/dashboard/organization')}
+          onClick={() => navigate('/dashboard/organization')}
         />
         <QuickActionCard
           title="Event-Bilder verwalten"
           description="Lade Medien hoch oder entferne alte Fotos."
-          onClick={() => (window.location.href = '/dashboard/media')}
+          onClick={() => navigate('/dashboard/media')}
         />
       </section>
 
