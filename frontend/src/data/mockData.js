@@ -225,7 +225,7 @@ export const EVENTS = [
     title: 'Friedensfest statt kriegstüchtig | Demo auf der Reusselstraße',
     excerpt: '16 Uhr | Family | Schulzgeipalparty & Kinderprogramm 18 Uhr | Demo | Friedensreden 20 Uhr | Party | Spoken Word, Konzerte, DJ',
     color: 'bg-orange-500',
-    image: '/assets/placeholders/orange.png',
+    image: '/assets/orange.png',
   },
   {
     id: 2,
@@ -238,7 +238,7 @@ export const EVENTS = [
     title: 'Sommerfest für Groß und Klein',
     excerpt: 'Zwischen Blühenden Blumen und unter blätterreichem warten Kreativangebote, Kaffee, Kuchen und die Geschichtenwerkstatt.',
     color: 'bg-yellow-500',
-    image: '/assets/placeholders/yellow.png',
+    image: '/assets/green.png',
   },
   {
     id: 3,
@@ -251,7 +251,7 @@ export const EVENTS = [
     title: 'Mit Feuer und Flamme gegen Rassismus',
     excerpt: 'Rund um ein wärmendes Lagerfeuer gibt es Musik, gemeinsames Singen, Stockbrot und Beiträge. Eine Initiative für die Stadtschloss-Kids.',
     color: 'bg-teal-500',
-    image: '/assets/placeholders/teal.png',
+    image: '/assets/marine.png',
   },
   {
     id: 4,
@@ -264,7 +264,7 @@ export const EVENTS = [
     title: 'Lorem ipsum dolor sit amet',
     excerpt: 'Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel.',
     color: 'bg-purple-500',
-    image: '/assets/placeholders/purple.png',
+    image: '/assets/purple.png',
   },
   {
     id: 5,
@@ -277,7 +277,7 @@ export const EVENTS = [
     title: 'Freiraum & – Open Mic!',
     excerpt: 'Ab jetzt wieder jeden letzten Donnerstag im Monat! Jeder spielt zwei Lieder oder bekommt 10 Minuten of fame!',
     color: 'bg-orange-500',
-    image: '/assets/placeholders/orange.png',
+    image: '/assets/orange.png',
   },
   {
     id: 6,
@@ -290,6 +290,6 @@ export const EVENTS = [
     title: 'Into the Blue',
     excerpt: 'Jeder ist eingeladen. Wir treffen uns vor dem Arena und ziehen dann gemeinsam weiter mit Musik und kunterbunter Laune…',
     color: 'bg-pink-500',
-    image: '/assets/placeholders/pink.png',
+    image: '/assets/pink.png',
   },
 ];
