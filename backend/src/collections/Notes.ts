@@ -1,21 +1,21 @@
 import type { CollectionConfig, PayloadRequest } from 'payload'
 
+const ownsNote = (req: PayloadRequest) =>
+  req.user
+    ? {
+        user: {
+          equals: req.user.id,
+        },
+      }
+    : false
+
 const Notes: CollectionConfig = {
   slug: 'notes',
   access: {
-    read: ({ req }: { req: PayloadRequest }) => {
-      if (!req.user) return false
-      return { user: { equals: req.user.id } } as any
-    },
-    create: ({ req }: { req: PayloadRequest }) => !!req.user,
-    update: ({ req }: { req: PayloadRequest }) => {
-      if (!req.user) return false
-      return { user: { equals: req.user.id } } as any
-    },
-    delete: ({ req }: { req: PayloadRequest }) => {
-      if (!req.user) return false
-      return { user: { equals: req.user.id } } as any
-    },
+    read: ({ req }) => ownsNote(req),
+    create: ({ req }) => !!req.user,
+    update: ({ req }) => ownsNote(req),
+    delete: ({ req }) => ownsNote(req),
   },
   fields: [
     {
@@ -37,6 +37,29 @@ const Notes: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    beforeValidate: [({ data, req, operation }) => {
+      if (!req.user) {
+        return data
+      }
+
+      if (operation === 'create') {
+        return {
+          ...data,
+          user: req.user.id,
+        }
+      }
+
+      if (operation === 'update' && req.user.role !== 'admin') {
+        return {
+          ...data,
+          user: req.user.id,
+        }
+      }
+
+      return data
+    }],
+  },
   timestamps: true,
 }
 

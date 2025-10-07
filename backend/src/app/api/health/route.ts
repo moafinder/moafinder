@@ -51,9 +51,11 @@ const resolveMongoConnectivity = (payload: CachedPayload) => {
       }
     }
 
-    if (typeof adapterConnection.db?.command === 'function') {
+    const { db } = adapterConnection
+    if (db && typeof db.command === 'function') {
+      const execPing = () => db.command({ ping: 1 })
       return {
-        ping: () => adapterConnection.db.command({ ping: 1 }),
+        ping: execPing,
         ready: adapterConnection.readyState === 1,
       }
     }
@@ -61,7 +63,8 @@ const resolveMongoConnectivity = (payload: CachedPayload) => {
     return { ping: null, ready: adapterConnection.readyState === 1 }
   }
 
-  const legacyClient = payload.mongoConnection?.getClient?.()
+  const legacyConnection = (payload as { mongoConnection?: { getClient?: () => MongoClient } }).mongoConnection
+  const legacyClient = legacyConnection?.getClient?.()
   if (legacyClient) {
     return {
       ping: () => legacyClient.db().command({ ping: 1 }),
