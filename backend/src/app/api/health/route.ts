@@ -1,5 +1,7 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import type { MongoClient, Db } from 'mongodb'
+import type { Connection } from 'mongoose'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +22,56 @@ const getCachedPayload = () => {
   return globalWithCachedPayload.__payloadHealthInstance
 }
 
+type CachedPayload = Awaited<ReturnType<typeof getCachedPayload>>
+type ExtendedConnection = Connection & { client?: MongoClient; db?: Db }
+
+const resolveMongoConnectivity = (payload: CachedPayload) => {
+  const adapterConnection = (payload.db as unknown as { connection?: ExtendedConnection } | undefined)?.connection
+
+  if (adapterConnection) {
+    if (typeof adapterConnection.getClient === 'function') {
+      try {
+        const client = adapterConnection.getClient()
+        if (client) {
+          return {
+            ping: () => client.db().command({ ping: 1 }),
+            ready: true,
+          }
+        }
+      } catch (error) {
+        payload.logger?.debug?.({ msg: 'Health check getClient threw, falling back', error })
+      }
+    }
+
+    if (adapterConnection.client) {
+      const client = adapterConnection.client
+      return {
+        ping: () => client.db().command({ ping: 1 }),
+        ready: true,
+      }
+    }
+
+    if (typeof adapterConnection.db?.command === 'function') {
+      return {
+        ping: () => adapterConnection.db.command({ ping: 1 }),
+        ready: adapterConnection.readyState === 1,
+      }
+    }
+
+    return { ping: null, ready: adapterConnection.readyState === 1 }
+  }
+
+  const legacyClient = payload.mongoConnection?.getClient?.()
+  if (legacyClient) {
+    return {
+      ping: () => legacyClient.db().command({ ping: 1 }),
+      ready: true,
+    }
+  }
+
+  return { ping: null, ready: false }
+}
+
 const parseDuration = (value: string | undefined, fallback: number) => {
   const parsed = Number.parseInt(value ?? '', 10)
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
@@ -32,20 +84,25 @@ const healthResponse = async () => {
 
   try {
     const payload = await getCachedPayload()
+    const connectivity = resolveMongoConnectivity(payload)
 
-    // Run a cheap command to assert the DB connection is alive.
-    const client =
-      // Payload 3 exposes the native Mongo client via payload.db.client
-      // but keep the older fallback for safety when running tests.
-      // @ts-expect-error - payload types don't expose the internal client.
-      payload.db?.client ?? payload.mongoConnection?.getClient?.()
+    if (!connectivity.ping) {
+      if (!connectivity.ready) {
+        throw new Error('Mongo client is not available yet')
+      }
 
-    if (!client) {
-      throw new Error('Mongo client is not available yet')
+      return Response.json(
+        {
+          status: 'ok',
+          detail: 'Mongo connection ready (adapter does not expose raw client)',
+          uptimeMs: Math.round(process.uptime() * 1000),
+        },
+        { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      )
     }
 
     await Promise.race([
-      client.db().command({ ping: 1 }),
+      connectivity.ping(),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`Mongo ping timed out after ${pingTimeoutMs}ms`)), pingTimeoutMs),
       ),
