@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
@@ -122,7 +122,7 @@ const OrganizerDashboardPage = () => {
         <QuickActionCard
           title="Neue Veranstaltung anlegen"
           description="Reiche ein neues Angebot oder Event ein."
-          onClick={() => navigate('/events/new')}
+          onClick={() => navigate('/dashboard/events/new')}
         />
         <QuickActionCard
           title="Organisation aktualisieren"
@@ -139,9 +139,9 @@ const OrganizerDashboardPage = () => {
       <section className="rounded-xl bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Bevorstehende Veranstaltungen</h2>
-          <a href="/events" className="text-sm font-semibold text-[#417225] hover:underline">
+          <Link to="/dashboard/events" className="text-sm font-semibold text-[#417225] hover:underline">
             Alle ansehen
-          </a>
+          </Link>
         </div>
         <div className="mt-4 space-y-3">
           {loading && <p className="text-sm text-gray-500">Lade Veranstaltungen …</p>}

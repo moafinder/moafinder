@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const primaryNav = [
-  { label: 'Profil', to: '/dashboard', role: 'any' },
+  { label: 'Dashboard', to: '/dashboard', role: 'any' },
   { label: 'Redaktion', to: '/dashboard/editor', role: 'editor' },
   { label: 'Admin', to: '/dashboard/admin', role: 'admin' },
 ];
