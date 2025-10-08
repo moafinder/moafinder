@@ -1,43 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-const FilterBar = ({ onFilterChange }) => {
-  const [ageGroups, setAgeGroups] = useState(['Kinder', 'Jugendliche', 'Erwachsene']);
+const FilterBar = ({
+  onFilterChange,
+  ageGroupOptions = [],
+  themeOptions = [],
+  placeOptions = [],
+  dateOptions = [],
+  disabled = false,
+}) => {
+  const [ageGroups, setAgeGroups] = useState(ageGroupOptions);
   const [inclusion, setInclusion] = useState(false);
   const [free, setFree] = useState(false);
   const [eventType, setEventType] = useState('all'); // 'all', 'einmalig', 'regelmäßig'
   const [selectedThemes, setSelectedThemes] = useState([]);
   const [selectedPlaces, setSelectedPlaces] = useState([]);
   const [selectedDates, setSelectedDates] = useState([]);
-  
-  const themes = [
-    'Baby und Familie',
-    'Geschlechtsspezifische Unterstützung',
-    'Geschlechtliche & sexuelle Vielfalt',
-    'Flucht & Migration',
-    'Antirassismus & Empowerment',
-    'Kunst & Kreativität',
-    'Musik & Gesang',
-    'Tanz & Darstellung',
-    'Begegnung & Party',
-    'Kultur & Sprache',
-  ];
-  
-  const places = [
-    'Arminiusmarkthalle',
-    'B-Laden',
-    'CJD',
-    'ClSpace',
-    'Im Kiez',
-    'Jugendhaus B8',
-    'Schlupfwinkel',
-    'Bibliothek',
-    'Die Brücke',
-    'Mobil im Kiez',
-    'Offenes Wohnzimmer',
-    'Otto-Spielplatz',
-    'Refo Moabit',
-    'Stadtschloss Moabit',
-  ];
+
+  const normalizedAgeGroupOptions = useMemo(
+    () => ageGroupOptions.map((group) => group?.trim()).filter(Boolean),
+    [ageGroupOptions],
+  );
+
+  useEffect(() => {
+    if (normalizedAgeGroupOptions.length === 0) {
+      setAgeGroups([]);
+      return;
+    }
+
+    setAgeGroups((prev) => {
+      if (!prev || prev.length === 0) {
+        return [...normalizedAgeGroupOptions];
+      }
+      const filtered = prev.filter((group) => normalizedAgeGroupOptions.includes(group));
+      return filtered.length > 0 ? filtered : [...normalizedAgeGroupOptions];
+    });
+  }, [normalizedAgeGroupOptions]);
+
+  const syncSelected = (selected, options) =>
+    selected.filter((value) => options.includes(value));
+
+  useEffect(() => {
+    setSelectedThemes((prev) => syncSelected(prev, themeOptions));
+  }, [themeOptions]);
+
+  useEffect(() => {
+    setSelectedPlaces((prev) => syncSelected(prev, placeOptions));
+  }, [placeOptions]);
+
+  useEffect(() => {
+    setSelectedDates((prev) => syncSelected(prev, dateOptions));
+  }, [dateOptions]);
   
   const toggleAgeGroup = (group) => {
     setAgeGroups(prev =>
@@ -48,7 +60,7 @@ const FilterBar = ({ onFilterChange }) => {
   };
 
   useEffect(() => {
-    onFilterChange({
+    onFilterChange?.({
       ageGroups,
       inclusion,
       free,
@@ -67,10 +79,11 @@ const FilterBar = ({ onFilterChange }) => {
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold mr-2">Angebote für...</span>
-            {['Kinder', 'Jugendliche', 'Erwachsene'].map(group => (
+            {normalizedAgeGroupOptions.map(group => (
               <button
                 key={group}
                 type="button"
+                disabled={disabled}
                 onClick={() => toggleAgeGroup(group)}
                 className={`px-4 py-2 rounded-full border-2 text-sm transition-colors ${
                   ageGroups.includes(group)
@@ -85,6 +98,7 @@ const FilterBar = ({ onFilterChange }) => {
             <button
               type="button"
               onClick={() => setInclusion(!inclusion)}
+              disabled={disabled}
               className={`relative px-4 py-2 rounded-full border-2 text-sm transition-colors group ${
                 inclusion
                   ? 'bg-green-500 text-white border-green-500'
@@ -100,6 +114,7 @@ const FilterBar = ({ onFilterChange }) => {
             <button
               type="button"
               onClick={() => setFree(!free)}
+              disabled={disabled}
               className={`px-4 py-2 rounded-full border-2 text-sm transition-colors ${
                 free
                   ? 'bg-green-500 text-white border-green-500'
@@ -122,6 +137,7 @@ const FilterBar = ({ onFilterChange }) => {
               min="0"
               max="2"
               value={eventType === 'regelmäßig' ? 0 : eventType === 'all' ? 1 : 2}
+              disabled={disabled}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
@@ -140,6 +156,7 @@ const FilterBar = ({ onFilterChange }) => {
           <div className="relative">
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              disabled={disabled}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value && !selectedThemes.includes(value)) {
@@ -149,7 +166,7 @@ const FilterBar = ({ onFilterChange }) => {
               }}
             >
               <option value="">Themen</option>
-              {themes.map(theme => (
+              {themeOptions.map(theme => (
                 <option key={theme} value={theme}>{theme}</option>
               ))}
             </select>
@@ -180,6 +197,7 @@ const FilterBar = ({ onFilterChange }) => {
           <div className="relative">
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              disabled={disabled}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value && !selectedPlaces.includes(value)) {
@@ -189,7 +207,7 @@ const FilterBar = ({ onFilterChange }) => {
               }}
             >
               <option value="">Orte</option>
-              {places.map(place => (
+              {placeOptions.map(place => (
                 <option key={place} value={place}>{place}</option>
               ))}
             </select>
@@ -222,6 +240,7 @@ const FilterBar = ({ onFilterChange }) => {
               type="text"
               placeholder="Termine"
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              disabled={disabled}
               onFocus={(e) => (e.target.type = 'date')}
               onBlur={(e) => (e.target.type = 'text')}
               onChange={(e) => {
