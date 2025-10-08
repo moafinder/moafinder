@@ -3,23 +3,24 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const primaryNav = [
-  { label: 'Dashboard', to: '/dashboard', role: 'any' },
+  { label: 'Profil', to: '/dashboard', role: 'any' },
   { label: 'Redaktion', to: '/dashboard/editor', role: 'editor' },
   { label: 'Admin', to: '/dashboard/admin', role: 'admin' },
 ];
 
 const organizerSidebar = [
-  { label: 'Übersicht', to: '/dashboard' },
-  { label: 'Meine Organisation', to: '/dashboard/organization' },
-  { label: 'Veranstaltungen', to: '/dashboard/events' },
-  { label: 'Medien', to: '/dashboard/media' },
+  { label: 'Veranstaltungsorte', to: '/dashboard/places' },
+  { label: 'Profil der Organisation', to: '/dashboard/organization' },
+  { label: 'Angebote/Veranstaltungen', to: '/dashboard/events' },
+  { label: 'Event-Bilder', to: '/dashboard/media' },
   { label: 'Regelkatalog', to: '/dashboard/guidelines' },
+  { label: 'Archiv', to: '/dashboard/archive' },
 ];
 
 const editorSidebar = [
-  { label: 'Veranstaltungen', to: '/dashboard/editor/events' },
-  { label: 'Profile der Organisationen', to: '/dashboard/editor/organizations' },
   { label: 'Veranstaltungsorte', to: '/dashboard/editor/places' },
+  { label: 'Profile der Organisationen', to: '/dashboard/editor/organizations' },
+  { label: 'Angebote/Veranstaltungen', to: '/dashboard/editor/events' },
   { label: 'Event-Bilder', to: '/dashboard/editor/media' },
   { label: 'Regelkatalog', to: '/dashboard/editor/guidelines' },
   { label: 'Archiv', to: '/dashboard/editor/archive' },
@@ -83,19 +84,19 @@ const DashboardLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 md:flex-row">
-        <aside className="w-full rounded-lg bg-white p-4 shadow-sm md:w-64">
-          <nav className="space-y-2">
-            {sidebarItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `block rounded-md px-3 py-2 text-sm font-semibold transition ${
-                    isActive || location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
-                      ? 'bg-[#E8F5DA] text-[#417225]'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row">
+          <aside className="w-full text-sm font-semibold text-gray-800 md:w-56 md:flex-none">
+            <nav className="space-y-3">
+              {sidebarItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `block transition ${
+                      isActive || location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+                        ? 'text-[#7CB92C]'
+                        : 'text-gray-800 hover:text-[#7CB92C]'
+                    }`
                 }
               >
                 {item.label}

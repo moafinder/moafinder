@@ -1,12 +1,14 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import OrganizerDashboardPage from './OrganizerDashboardPage';
 import OrganizationProfilePage from './OrganizationProfilePage';
 import OrganizerEventsPage from './OrganizerEventsPage';
 import OrganizerMediaPage from './OrganizerMediaPage';
 import OrganizerEventCreatePage from './OrganizerEventCreatePage';
 import OrganizerEventEditPage from './OrganizerEventEditPage';
+import OrganizerLocationsPage from './OrganizerLocationsPage';
+import OrganizerArchivePage from './OrganizerArchivePage';
+import OrganizerGuidelinesPage from './OrganizerGuidelinesPage';
 import EditorEventsPage from './EditorEventsPage';
 import EditorOrganizationsPage from './EditorOrganizationsPage';
 import EditorLocationsPage from './EditorLocationsPage';
@@ -22,13 +24,15 @@ const DashboardRoutes = () => {
   return (
     <DashboardLayout>
       <Routes>
-        <Route index element={<OrganizerDashboardPage />} />
+        <Route index element={<Navigate to="/dashboard/events" replace />} />
         <Route path="organization" element={<OrganizationProfilePage />} />
         <Route path="events" element={<OrganizerEventsPage />} />
         <Route path="events/new" element={<OrganizerEventCreatePage />} />
         <Route path="events/:id/edit" element={<OrganizerEventEditPage />} />
         <Route path="media" element={<OrganizerMediaPage />} />
-        <Route path="" element={<OrganizerDashboardPage />} />
+        <Route path="places" element={<OrganizerLocationsPage />} />
+        <Route path="archive" element={<OrganizerArchivePage />} />
+        <Route path="guidelines" element={<OrganizerGuidelinesPage />} />
         <Route
           path="editor/events"
           element={

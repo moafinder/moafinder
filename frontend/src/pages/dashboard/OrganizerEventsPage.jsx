@@ -1,33 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import ListCard from './components/ListCard';
+import { getListColor } from '../../utils/colorPalette';
 
-const statusLabels = {
-  draft: 'Entwurf',
-  pending: 'In Prüfung',
-  approved: 'Veröffentlicht',
-  archived: 'Archiviert',
-  rejected: 'Abgelehnt',
-};
-
-const badgeClasses = {
-  draft: 'bg-gray-200 text-gray-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  archived: 'bg-gray-100 text-gray-500',
-  rejected: 'bg-red-100 text-red-700',
-};
-
-const formatDate = (value, includeTime = false) => {
-  if (!value) return '–';
-  try {
-    return format(new Date(value), includeTime ? 'dd.MM.yyyy HH:mm' : 'dd.MM.yyyy', { locale: de });
-  } catch (err) {
-    return value;
-  }
+const statusMeta = {
+  draft: { label: 'Entwurf', tone: 'text-gray-600' },
+  pending: { label: 'In Prüfung', tone: 'text-yellow-700' },
+  approved: { label: 'Freigegeben', tone: 'text-[#417225]' },
+  rejected: { label: 'Abgelehnt', tone: 'text-red-600' },
+  archived: { label: 'Archiviert', tone: 'text-gray-500' },
 };
 
 const OrganizerEventsPage = () => {
@@ -65,7 +50,7 @@ const OrganizerEventsPage = () => {
         const params = new URLSearchParams({
           'where[organizer][equals]': user.id,
           sort: '-createdAt',
-          depth: '0',
+          depth: '1',
           limit: '200',
         });
         const response = await fetch(buildApiUrl(`/api/events?${params.toString()}`), {
@@ -115,38 +100,83 @@ const OrganizerEventsPage = () => {
     return grouped.all.filter((event) => event.status === activeFilter);
   }, [grouped, activeFilter]);
 
+  const formatSpan = (start, end) => {
+    if (!start) return 'Termin folgt';
+    try {
+      const startDate = new Date(start);
+      const base = format(startDate, 'dd.MM.yyyy / HH:mm', { locale: de });
+      if (!end) return `${base} Uhr`;
+      const endDate = new Date(end);
+      return `${base}–${format(endDate, 'HH:mm', { locale: de })} Uhr`;
+    } catch (err) {
+      return start;
+    }
+  };
+
+  const formatMeta = (value) => {
+    if (!value) return 'Datum unbekannt';
+    try {
+      return format(new Date(value), 'dd.MM.yyyy', { locale: de });
+    } catch (err) {
+      return value;
+    }
+  };
+
+  const filterOptions = [
+    { value: 'all', label: 'Alle' },
+    { value: 'pending', label: 'In Prüfung' },
+    { value: 'approved', label: 'Freigegeben' },
+    { value: 'draft', label: 'Entwürfe' },
+    { value: 'rejected', label: 'Abgelehnt' },
+  ];
+
+  const isNew = (event) => {
+    const created = event.createdAt ? new Date(event.createdAt) : null;
+    if (!created) return false;
+    const now = new Date();
+    const diff = now.getTime() - created.getTime();
+    return diff < 1000 * 60 * 60 * 24 * 7;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#7CB92C]">Veranstaltungen</p>
-          <h1 className="text-3xl font-bold text-gray-900">Meine Events</h1>
-          <p className="text-sm text-gray-600">Verwalte Entwürfe, eingereichte Events und veröffentlichte Angebote.</p>
+      <header className="space-y-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#7CB92C]">Angebote/Veranstaltungen</p>
+            <h1 className="text-3xl font-bold text-gray-900">Einträge im MoaFinder</h1>
+            <p className="text-sm text-gray-600">
+              Reiche neue Angebote ein, prüfe den Status deiner Veranstaltungen und verwalte veröffentlichte Einträge.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/events/new')}
+            className="inline-flex items-center justify-center rounded-md bg-[#7CB92C] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#5a8b20]"
+          >
+            Neuer Event
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/dashboard/events/new')}
-          className="rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20]"
-        >
-          Neue Veranstaltung einreichen
-        </button>
-      </div>
-
-      {flash && (
-        <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">{flash}</div>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatPill label="Alle" value={grouped.all.length} active={activeFilter === 'all'} onClick={() => setActiveFilter('all')} />
-        {Object.entries(grouped.counts).map(([status, value]) => (
-          <StatPill
-            key={status}
-            label={statusLabels[status] ?? status}
-            value={value}
-            active={activeFilter === status}
-            onClick={() => setActiveFilter(status)}
-          />
-        ))}
-      </div>
+        <div className="flex flex-wrap gap-2">
+          {filterOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setActiveFilter(option.value)}
+              className={`rounded-full border px-4 py-1 text-sm font-semibold transition ${
+                activeFilter === option.value
+                  ? 'border-[#7CB92C] bg-[#F0F8E8] text-[#417225]'
+                  : 'border-gray-200 text-gray-700 hover:border-[#7CB92C] hover:text-[#417225]'
+              }`}
+            >
+              {option.label} ({option.value === 'all' ? grouped.all.length : grouped.counts[option.value] ?? 0})
+            </button>
+          ))}
+        </div>
+        {flash && (
+          <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">{flash}</div>
+        )}
+      </header>
 
       {loading ? (
         <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">Lade Veranstaltungen …</div>
@@ -154,77 +184,46 @@ const OrganizerEventsPage = () => {
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : filteredEvents.length === 0 ? (
         <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">
-          Keine Veranstaltungen im ausgewählten Status. Reiche eine neue ein oder ändere den Filter.
+          Keine Veranstaltungen im ausgewählten Status. Lege gleich einen neuen Event an oder wähle einen anderen Filter.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Titel</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Start</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Bearbeitet</th>
-                <th className="px-6 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredEvents.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    <div className="flex flex-col">
-                      <span>{event.title ?? 'Ohne Titel'}</span>
-                      <span className="text-xs text-gray-500">{event.location ?? 'Ort folgt'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{formatDate(event.startDate)}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                        badgeClasses[event.status] ?? 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {statusLabels[event.status] ?? event.status ?? 'Unbekannt'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{formatDate(event.updatedAt)}</td>
-                  <td className="px-6 py-4 text-right text-sm">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        to={`/dashboard/events/${event.id}/edit`}
-                        className="rounded-md border border-gray-300 px-3 py-1 font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
-                      >
-                        Bearbeiten
-                      </Link>
-                      <a
-                        href={`/event/${event.id}`}
-                        className="rounded-md bg-[#7CB92C] px-3 py-1 font-semibold text-black transition hover:bg-[#5a8b20]"
-                      >
-                        Vorschau
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {filteredEvents.map((event, index) => {
+            const meta = statusMeta[event.status] ?? statusMeta.draft;
+            return (
+              <ListCard
+                key={event.id ?? index}
+                color={getListColor(index)}
+                tag={isNew(event) ? 'NEU' : null}
+                title={event.title ?? 'Ohne Titel'}
+                subtitle={`${formatSpan(event.startDate, event.endDate)} – ${event.location ?? 'Ort folgt'}`}
+                meta={`Erstellt am ${formatMeta(event.createdAt)} von ${event.organizer?.name ?? 'Veranstalter*in'}`}
+                actions={[
+                  <Link
+                    to={`/dashboard/events/${event.id}/edit`}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
+                  >
+                    Bearbeiten
+                  </Link>,
+                  <a
+                    href={`/event/${event.id}`}
+                    className="rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20]"
+                  >
+                    Vorschau
+                  </a>,
+                ]}
+              >
+                <p className={`text-sm font-semibold ${meta.tone}`}>{meta.label}</p>
+                {event.description && (
+                  <p className="mt-1 text-sm text-gray-600">{event.description}</p>
+                )}
+              </ListCard>
+            );
+          })}
         </div>
       )}
     </div>
   );
 };
-
-const StatPill = ({ label, value, active, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex flex-col rounded-xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow ${
-      active ? 'border-[#7CB92C] bg-[#F0F8E8]' : 'border-gray-200 bg-white'
-    }`}
-  >
-    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-    <span className="text-2xl font-semibold text-gray-900">{value}</span>
-  </button>
-);
 
 export default OrganizerEventsPage;
