@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import kiezMachenLogo from '../assets/kiezmachen_logo.png';
 import refoLogo from '../assets/refo_logo.png';
 import partnerLogos from '../assets/partner_logos.png';
@@ -16,6 +16,8 @@ import { useAuth } from '../context/AuthContext';
  */
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from ? location.state.from : '/dashboard';
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +35,7 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      navigate('/notes');
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError('Login fehlgeschlagen');
     }

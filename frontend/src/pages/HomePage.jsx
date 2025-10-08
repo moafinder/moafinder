@@ -84,8 +84,7 @@ const HomePage = () => {
         <div className="md:w-7/12">
           <MapView
             places={filtered}
-            onSelect={(place) => setSelectedPlace(place)}
-            height="450px"
+            onPlaceSelect={(place) => setSelectedPlace(place)}
           />
         </div>
         <div className="md:w-5/12 mt-6 md:mt-0 space-y-4">

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import MapView from '../components/MapView';
+import { getLocation } from '../api/locations';
+import { listEvents } from '../api/events';
+import { adaptEvent, adaptLocation } from '../utils/dataAdapters';
 
 /**
  * Detailed page for a specific place. Displays full information
@@ -9,93 +11,176 @@ import MapView from '../components/MapView';
  */
 const PlaceProfile = () => {
   const { id } = useParams();
-  const placeId = parseInt(id, 10);
+  const [place, setPlace] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [loadingPlace, setLoadingPlace] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [placeError, setPlaceError] = useState('');
+  const [eventsError, setEventsError] = useState('');
 
-  // In a real application you would load the place data based on
-  // the URL parameter. Here we reuse the mock data from HomePage.
-  const places = [
-    {
-      id: 1,
-      name: 'Teehaus Moabit',
-      categories: ['Café', 'Kultur'],
-      description:
-        'Gemütliches Teehaus mit Veranstaltungen und Lesungen. Hier können Sie entspannen, Tee genießen und kulturelle Events besuchen.',
-      image: 'https://source.unsplash.com/800x600/?cafe',
-      lat: 52.523,
-      lng: 13.339,
-      address: 'Alt-Moabit 23, 10555 Berlin',
-      phone: '+49 30 12345678',
-      website: 'https://teehaus-moabit.de',
-    },
-    {
-      id: 2,
-      name: 'Öffentliche Bibliothek',
-      categories: ['Bildung', 'Öffentlich'],
-      description:
-        'Die Bezirksbibliothek bietet eine große Auswahl an Büchern, Zeitschriften und digitalen Medien. Öffnungszeiten: Mo–Fr 10–18 Uhr.',
-      image: 'https://source.unsplash.com/800x600/?library',
-      lat: 52.526,
-      lng: 13.344,
-      address: 'Turmstraße 75, 10551 Berlin',
-      phone: '+49 30 987654321',
-      website: 'https://bibliothek-moabit.de',
-    },
-    {
-      id: 3,
-      name: 'Markthalle Moabit',
-      categories: ['Einkaufen'],
-      description:
-        'Frische regionale Produkte und Streetfood in historischer Markthalle. Jeden Mittwoch, Freitag und Samstag geöffnet.',
-      image: 'https://source.unsplash.com/800x600/?market',
-      lat: 52.527,
-      lng: 13.341,
-      address: 'Wilsnacker Str. 61, 10559 Berlin',
-      phone: '+49 30 24681012',
-      website: 'https://markthalle-moabit.de',
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return () => {};
 
-  const place = places.find((p) => p.id === placeId);
+    const loadPlace = async () => {
+      setLoadingPlace(true);
+      setPlaceError('');
+      try {
+        const response = await getLocation(id, { depth: 1 });
+        if (!cancelled) {
+          const adapted = adaptLocation(response);
+          if (!adapted) {
+            setPlaceError('Ort konnte nicht gefunden werden.');
+          } else {
+            setPlace(adapted);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlaceError(err instanceof Error ? err.message : 'Ort konnte nicht geladen werden.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingPlace(false);
+        }
+      }
+    };
 
-  if (!place) {
+    loadPlace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return () => {};
+
+    const loadEvents = async () => {
+      setLoadingEvents(true);
+      setEventsError('');
+      try {
+        const response = await listEvents({
+          limit: 100,
+          depth: 2,
+          sort: 'startDate',
+          'where[location][equals]': id,
+          'where[status][equals]': 'approved',
+        });
+        const docs = Array.isArray(response?.docs) ? response.docs : [];
+        if (!cancelled) {
+          const adapted = docs.map(adaptEvent).filter(Boolean);
+          setEvents(adapted);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setEventsError(err instanceof Error ? err.message : 'Veranstaltungen konnten nicht geladen werden.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingEvents(false);
+        }
+      }
+    };
+
+    loadEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const addressLines = useMemo(() => {
+    if (!place?.address) return [];
+    return [place.address.line1, place.address.line2].filter(Boolean);
+  }, [place]);
+
+  if (loadingPlace) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Ort nicht gefunden</h2>
-        <Link to="/" className="text-primary-700 hover:underline">Zurück zur Übersicht</Link>
+      <div className="container mx-auto px-4 py-8">
+        <p className="text-gray-600">Ort wird geladen …</p>
       </div>
     );
   }
 
+  if (placeError || !place) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">Ort nicht gefunden</h2>
+        {placeError && <p className="mb-4 text-gray-600">{placeError}</p>}
+        <Link to="/orte" className="text-[#7CB92C] hover:underline">Zurück zur Übersicht</Link>
+      </div>
+    );
+  }
+
+  const eventDateFormatter = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
   return (
     <div className="container mx-auto px-4 py-6">
-      <Link to="/" className="text-primary-700 hover:underline">← Zurück zur Übersicht</Link>
+      <Link to="/orte" className="text-[#7CB92C] hover:underline">← Zurück zur Übersicht</Link>
       <div className="mt-4 grid gap-6 md:grid-cols-2">
-        <div>
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img
-            src={place.image}
-            alt={place.name}
-            className="w-full h-64 md:h-80 object-cover rounded-lg shadow"
-          />
-        </div>
+        {place.image?.url && (
+          <div>
+            {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
+            <img
+              src={place.image.url}
+              alt={place.image.alt ?? place.name}
+              className="w-full h-64 md:h-80 object-cover rounded-lg shadow"
+            />
+          </div>
+        )}
         <div>
           <h1 className="text-3xl font-bold mb-2">{place.name}</h1>
-          <p className="text-gray-500 mb-4">{place.categories.join(', ')}</p>
-          <p className="text-gray-700 mb-4">{place.description}</p>
+          {place.shortName && place.shortName !== place.name && (
+            <p className="text-sm uppercase tracking-wide text-gray-500">{place.shortName}</p>
+          )}
+          {place.description && <p className="text-gray-700 mb-4 whitespace-pre-line">{place.description}</p>}
           <div className="mb-4">
             <h2 className="text-lg font-semibold">Adresse</h2>
-            <p>{place.address}</p>
+            {addressLines.length > 0 ? (
+              addressLines.map((line) => <p key={line}>{line}</p>)
+            ) : (
+              <p className="text-gray-600">Adresse folgt.</p>
+            )}
           </div>
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">Kontakt</h2>
-            <p>Telefon: <a href={`tel:${place.phone}`} className="text-primary-700 hover:underline">{place.phone}</a></p>
-            <p>Website: <a href={place.website} className="text-primary-700 hover:underline" target="_blank" rel="noopener noreferrer">{place.website.replace(/^https?:\/\//, '')}</a></p>
-          </div>
+          {place.openingHours && (
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Öffnungszeiten</h2>
+              <p className="text-gray-700 whitespace-pre-line">{place.openingHours}</p>
+            </div>
+          )}
         </div>
       </div>
-      <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-2">Lage</h2>
-          <MapView places={[place]} onSelect={() => {}} height="350px" />
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-2">Veranstaltungen an diesem Ort</h2>
+        {eventsError && <p className="text-sm text-red-600">{eventsError}</p>}
+        {loadingEvents ? (
+          <p className="text-gray-600">Veranstaltungen werden geladen …</p>
+        ) : events.length === 0 ? (
+          <p className="text-gray-600">Es sind aktuell keine Veranstaltungen veröffentlicht.</p>
+        ) : (
+          <ul className="space-y-3">
+            {events.map((event) => (
+              <li key={event.id} className="rounded border border-gray-200 bg-white p-4">
+                <Link to={`/event/${event.id}`} className="block hover:text-[#7CB92C]">
+                  <p className="text-sm text-gray-500">
+                    {event.startDateObj ? eventDateFormatter.format(event.startDateObj) : 'Datum folgt'}
+                    {event.timeLabel ? ` · ${event.timeLabel}` : ''}
+                  </p>
+                  <p className="text-lg font-semibold text-gray-800">{event.title}</p>
+                  {event.excerpt && <p className="text-sm text-gray-600">{event.excerpt}</p>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

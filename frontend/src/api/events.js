@@ -2,45 +2,53 @@ import { buildApiUrl } from './baseUrl';
 
 const API_URL = '/api/events';
 
-export async function listEvents() {
-  const res = await fetch(buildApiUrl(API_URL), { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch events');
-  return res.json();
+async function request(url, options = {}) {
+  const response = await fetch(buildApiUrl(url), {
+    credentials: 'include',
+    ...options,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Event request failed');
+  }
+
+  const contentType = response.headers.get('content-type');
+  if (contentType?.includes('application/json')) {
+    return response.json();
+  }
+  return null;
 }
 
-export async function getEvent(id) {
-  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch event');
-  return res.json();
+export async function listEvents(params = {}) {
+  const search = new URLSearchParams(params);
+  return request(`${API_URL}?${search.toString()}`);
+}
+
+export async function getEvent(id, params = {}) {
+  const search = new URLSearchParams(params);
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return request(`${API_URL}/${id}${suffix}`);
 }
 
 export async function createEvent(data) {
-  const res = await fetch(buildApiUrl(API_URL), {
+  return request(API_URL, {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create event');
-  return res.json();
 }
 
 export async function updateEvent(id, data) {
-  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), {
-    method: 'PUT',
-    credentials: 'include',
+  return request(`${API_URL}/${id}`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to update event');
-  return res.json();
 }
 
 export async function deleteEvent(id) {
-  const res = await fetch(buildApiUrl(`${API_URL}/${id}`), {
+  return request(`${API_URL}/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to delete event');
-  return res.json();
 }

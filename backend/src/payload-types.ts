@@ -64,7 +64,6 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
-    organizations: OrganizationAuthOperations;
   };
   blocks: {};
   collections: {
@@ -98,37 +97,15 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user:
-    | (User & {
-        collection: 'users';
-      })
-    | (Organization & {
-        collection: 'organizations';
-      });
+  user: User & {
+    collection: 'users';
+  };
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
-  forgotPassword: {
-    email: string;
-    password: string;
-  };
-  login: {
-    email: string;
-    password: string;
-  };
-  registerFirstUser: {
-    email: string;
-    password: string;
-  };
-  unlock: {
-    email: string;
-    password: string;
-  };
-}
-export interface OrganizationAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -178,7 +155,9 @@ export interface User {
  */
 export interface Organization {
   id: string;
+  owner: string | User;
   name: string;
+  email: string;
   role?: ('organizer' | 'editor' | 'admin') | null;
   contactPerson?: string | null;
   address?: {
@@ -193,21 +172,6 @@ export interface Organization {
   approved?: boolean | null;
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -215,6 +179,7 @@ export interface Organization {
  */
 export interface Media {
   id: string;
+  owner: string | User;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -391,15 +356,10 @@ export interface PayloadLockedDocument {
         value: string | Note;
       } | null);
   globalSlug?: string | null;
-  user:
-    | {
-        relationTo: 'users';
-        value: string | User;
-      }
-    | {
-        relationTo: 'organizations';
-        value: string | Organization;
-      };
+  user: {
+    relationTo: 'users';
+    value: string | User;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -409,15 +369,10 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: string;
-  user:
-    | {
-        relationTo: 'users';
-        value: string | User;
-      }
-    | {
-        relationTo: 'organizations';
-        value: string | Organization;
-      };
+  user: {
+    relationTo: 'users';
+    value: string | User;
+  };
   key?: string | null;
   value?:
     | {
@@ -471,7 +426,9 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "organizations_select".
  */
 export interface OrganizationsSelect<T extends boolean = true> {
+  owner?: T;
   name?: T;
+  email?: T;
   role?: T;
   contactPerson?: T;
   address?:
@@ -488,20 +445,6 @@ export interface OrganizationsSelect<T extends boolean = true> {
   approved?: T;
   updatedAt?: T;
   createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
-  sessions?:
-    | T
-    | {
-        id?: T;
-        createdAt?: T;
-        expiresAt?: T;
-      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -594,6 +537,7 @@ export interface TagsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  owner?: T;
   alt?: T;
   updatedAt?: T;
   createdAt?: T;

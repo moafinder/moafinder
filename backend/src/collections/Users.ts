@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 export const ENFORCED_DEFAULT_ROLE = 'organizer'
+const isProduction = process.env.NODE_ENV === 'production'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -11,7 +12,12 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
   },
-  auth: true,
+  auth: {
+    cookies: {
+      sameSite: isProduction ? 'None' : 'Lax',
+      secure: isProduction,
+    },
+  },
   hooks: {
     beforeChange: [({ data, req, operation }) => {
       if (!data) return data

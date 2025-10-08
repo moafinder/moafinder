@@ -163,8 +163,10 @@ export async function POST(request: Request) {
 
   const payload = await getPayload({ config: configPromise })
 
+  let createdUser: Awaited<ReturnType<typeof payload.create>> | null = null
+
   try {
-    await payload.create({
+    createdUser = await payload.create({
       collection: 'users',
       data: {
         name: parsed.data.name,
@@ -194,6 +196,23 @@ export async function POST(request: Request) {
 
     payload.logger.error({ msg: 'User registration failed', error })
     return jsonResponse(request, { errors: [{ message: 'Registrierung fehlgeschlagen.' }] }, { status: 500 })
+  }
+
+  if (createdUser) {
+    try {
+      await payload.create({
+        collection: 'organizations',
+        data: {
+          owner: createdUser.id,
+          name: parsed.data.name,
+          email: parsed.data.email,
+          contactPerson: parsed.data.name,
+          role: 'organizer',
+        },
+      })
+    } catch (error) {
+      payload.logger.error({ msg: 'Failed to create organization for new user', error, userId: createdUser.id })
+    }
   }
 
   return jsonResponse(request, { message: 'Registrierung erfolgreich.' }, { status: 201 })
