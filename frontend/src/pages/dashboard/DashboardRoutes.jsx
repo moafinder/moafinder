@@ -9,6 +9,13 @@ import OrganizerEventCreatePage from './OrganizerEventCreatePage';
 import OrganizerEventEditPage from './OrganizerEventEditPage';
 import EditorEventsPage from './EditorEventsPage';
 import EditorOrganizationsPage from './EditorOrganizationsPage';
+import EditorLocationsPage from './EditorLocationsPage';
+import EditorMediaPage from './EditorMediaPage';
+import EditorGuidelinesPage from './EditorGuidelinesPage';
+import EditorArchivePage from './EditorArchivePage';
+import AdminOverviewPage from './AdminOverviewPage';
+import AdminUsersPage from './AdminUsersPage';
+import AdminSettingsPage from './AdminSettingsPage';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardRoutes = () => {
@@ -35,6 +42,62 @@ const DashboardRoutes = () => {
           element={
             <RoleGuard roles={['editor', 'admin']}>
               <EditorOrganizationsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/places"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorLocationsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/media"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorMediaPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/guidelines"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorGuidelinesPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/archive"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorArchivePage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="admin"
+          element={
+            <RoleGuard roles={['admin']}>
+              <AdminOverviewPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="admin/users"
+          element={
+            <RoleGuard roles={['admin']}>
+              <AdminUsersPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="admin/settings"
+          element={
+            <RoleGuard roles={['admin']}>
+              <AdminSettingsPage />
             </RoleGuard>
           }
         />

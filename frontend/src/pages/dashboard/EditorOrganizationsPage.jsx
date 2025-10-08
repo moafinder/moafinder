@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import EditorLayout from './EditorLayout';
 import { buildApiUrl } from '../../api/baseUrl';
 
 const statusOptions = [
@@ -96,6 +95,11 @@ const EditorOrganizationsPage = () => {
         </p>
       </header>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <SummaryCard label="Freigabe ausstehend" value={counts.pending ?? 0} active={activeFilter === 'pending'} onClick={() => setActiveFilter('pending')} />
+        <SummaryCard label="Freigegeben" value={counts.approved ?? 0} active={activeFilter === 'approved'} onClick={() => setActiveFilter('approved')} />
+      </div>
+
       <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-3 text-sm">
           {statusOptions.map((option) => (
@@ -122,60 +126,71 @@ const EditorOrganizationsPage = () => {
         </div>
       </div>
 
-      <EditorLayout counts={counts} activeFilter={activeFilter === 'all' ? 'approved' : activeFilter} onFilterChange={setActiveFilter}>
-        {loading ? (
-          <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">Lade Organisationen …</div>
-        ) : error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">
-            Keine Organisationen gefunden.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((org) => (
-              <article key={org.id} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-                <div className="flex items-start gap-3">
-                  {org.logo?.url ? (
-                    <img src={org.logo.url} alt={org.logo.alt || org.name} className="h-16 w-16 rounded-md object-contain" />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-500">Logo</div>
-                  )}
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{org.name ?? 'Ohne Namen'}</h2>
-                    <p className="text-sm text-gray-600">{org.address?.street ? `${org.address.street} ${org.address.number ?? ''}, ${org.address.postalCode ?? ''} ${org.address.city ?? ''}` : 'Adresse folgt'}</p>
-                    <p className="text-xs uppercase tracking-wide text-gray-500">Erstellt am {new Date(org.createdAt).toLocaleDateString('de-DE')}</p>
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>{org.contactPerson}</p>
-                      <p>{org.email}</p>
-                      {org.phone && <p>{org.phone}</p>}
-                      {org.website && (
-                        <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-[#417225] hover:underline">
-                          {org.website}
-                        </a>
-                      )}
-                    </div>
+      {loading ? (
+        <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">Lade Organisationen …</div>
+      ) : error ? (
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">
+          Keine Organisationen gefunden.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((org) => (
+            <article key={org.id} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                {org.logo?.url ? (
+                  <img src={org.logo.url} alt={org.logo.alt || org.name} className="h-16 w-16 rounded-md object-contain" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-500">Logo</div>
+                )}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">{org.name ?? 'Ohne Namen'}</h2>
+                  <p className="text-sm text-gray-600">{org.address?.street ? `${org.address.street} ${org.address.number ?? ''}, ${org.address.postalCode ?? ''} ${org.address.city ?? ''}` : 'Adresse folgt'}</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Erstellt am {new Date(org.createdAt).toLocaleDateString('de-DE')}</p>
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>{org.contactPerson}</p>
+                    <p>{org.email}</p>
+                    {org.phone && <p>{org.phone}</p>}
+                    {org.website && (
+                      <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-[#417225] hover:underline">
+                        {org.website}
+                      </a>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <button
-                    type="button"
-                    disabled={processingId === org.id}
-                    className={`rounded-md px-4 py-2 font-semibold transition ${
-                      org.approved ? 'border border-gray-300 text-gray-700 hover:border-[#7CB92C]' : 'bg-[#7CB92C] text-black hover:bg-[#5a8b20]'
-                    }`}
-                    onClick={() => handleApprovalChange(org.id, !org.approved)}
-                  >
-                    {org.approved ? 'Freigabe entziehen' : 'Freigeben'}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </EditorLayout>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <button
+                  type="button"
+                  disabled={processingId === org.id}
+                  className={`rounded-md px-4 py-2 font-semibold transition ${
+                    org.approved ? 'border border-gray-300 text-gray-700 hover:border-[#7CB92C]' : 'bg-[#7CB92C] text-black hover:bg-[#5a8b20]'
+                  }`}
+                  onClick={() => handleApprovalChange(org.id, !org.approved)}
+                >
+                  {org.approved ? 'Freigabe entziehen' : 'Freigeben'}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default EditorOrganizationsPage;
+
+const SummaryCard = ({ label, value, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex flex-col rounded-xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow ${
+      active ? 'border-[#7CB92C] bg-[#F0F8E8]' : 'border-gray-200 bg-white'
+    }`}
+  >
+    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+    <span className="text-2xl font-semibold text-gray-900">{value}</span>
+  </button>
+);
