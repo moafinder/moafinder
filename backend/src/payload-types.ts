@@ -179,6 +179,7 @@ export interface Organization {
  */
 export interface Media {
   id: string;
+  owner: string | User;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -536,6 +537,7 @@ export interface TagsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  owner?: T;
   alt?: T;
   updatedAt?: T;
   createdAt?: T;
