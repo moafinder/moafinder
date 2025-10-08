@@ -19,6 +19,8 @@
 
 set -euo pipefail
 
+export AWS_PAGER=""
+
 ############################
 # CHANGE ME (if needed)
 ############################
