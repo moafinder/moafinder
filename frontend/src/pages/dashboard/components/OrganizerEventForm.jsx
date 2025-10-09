@@ -3,6 +3,7 @@ import { listLocations } from '../../../api/locations';
 import { listTags } from '../../../api/tags';
 import { buildApiUrl } from '../../../api/baseUrl';
 import { useAuth } from '../../../context/AuthContext';
+import { withAuthHeaders } from '../../../utils/authHeaders';
 
 const EVENT_TYPE_OPTIONS = [
   { label: 'Einmalig', value: 'einmalig' },
@@ -59,6 +60,23 @@ function datetimeLocalToIso(value) {
   return date.toISOString();
 }
 
+function extractErrorMessage(err) {
+  if (!err) return 'Speichern fehlgeschlagen.';
+  const raw = err instanceof Error ? err.message : String(err);
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+      return parsed.errors[0].message ?? 'Bitte prüfe die Eingaben.';
+    }
+  } catch {
+    // ignore JSON parse issues
+  }
+  if (/ValidationError/i.test(raw)) {
+    return 'Bitte prüfe die Eingaben. Pflichtfelder sind erforderlich.';
+  }
+  return raw || 'Speichern fehlgeschlagen.';
+}
+
 const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
   const { user } = useAuth();
   const [form, setForm] = useState(defaultForm);
@@ -74,6 +92,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       setForm(defaultForm);
       return;
     }
+
     setForm({
       title: initialEvent.title ?? '',
       subtitle: initialEvent.subtitle ?? '',
@@ -81,8 +100,12 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       eventType: initialEvent.eventType ?? 'einmalig',
       startDate: isoToDatetimeLocal(initialEvent.startDate),
       endDate: isoToDatetimeLocal(initialEvent.endDate),
-      timeFrom: initialEvent.time?.from ?? '',
-      timeTo: initialEvent.time?.to ?? '',
+      timeFrom:
+        initialEvent.time?.from ??
+        (initialEvent.startDate ? new Date(initialEvent.startDate).toISOString().slice(11, 16) : ''),
+      timeTo:
+        initialEvent.time?.to ??
+        (initialEvent.endDate ? new Date(initialEvent.endDate).toISOString().slice(11, 16) : ''),
       recurrenceDays: initialEvent.recurrence?.daysOfWeek ?? [],
       recurrenceUntil: initialEvent.recurrence?.repeatUntil
         ? initialEvent.recurrence.repeatUntil.slice(0, 10)
@@ -110,9 +133,12 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         const [locationsRes, tagsRes, mediaRes] = await Promise.all([
           listLocations({ limit: 200 }),
           listTags({ limit: 200 }),
-          fetch(buildApiUrl('/api/media?limit=200'), { credentials: 'include' }).then((response) => {
+          fetch(buildApiUrl('/api/media?limit=200'), {
+            credentials: 'include',
+            headers: withAuthHeaders(),
+          }).then((response) => {
             if (!response.ok) {
-              throw new Error('Medien konnten nicht geladen werden');
+              throw new Error('Medien konnten nicht geladen werden.');
             }
             return response.json();
           }),
@@ -120,11 +146,29 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
 
         if (!mounted) return;
         setLocations(locationsRes.docs ?? []);
-        setTags(tagsRes.docs ?? []);
+        const uniqueTags = [];
+        const seen = new Set();
+        for (const rawTag of tagsRes.docs ?? []) {
+          if (!rawTag) continue;
+          const tagDoc = rawTag.doc ?? rawTag;
+          if (!tagDoc) continue;
+          const mergedTag = {
+            ...tagDoc,
+            id: tagDoc.id ?? rawTag.id,
+            slug: tagDoc.slug ?? rawTag.slug,
+          };
+          const nameKey = typeof mergedTag.name === 'string' ? mergedTag.name.trim().toLowerCase() : null;
+          const slugKey = typeof mergedTag.slug === 'string' ? mergedTag.slug.trim().toLowerCase() : null;
+          const key = nameKey || slugKey || (typeof mergedTag.id === 'string' ? mergedTag.id : null);
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          uniqueTags.push(mergedTag);
+        }
+        setTags(uniqueTags);
         setMedia(mediaRes.docs ?? []);
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stammdaten');
+          setError(err instanceof Error ? err.message : 'Stammdaten konnten nicht geladen werden.');
         }
       } finally {
         if (mounted) setLoadingMeta(false);
@@ -149,13 +193,35 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
     setSaving(true);
     setError('');
     try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const startDateISO = datetimeLocalToIso(form.startDate);
+      const endDateISO = datetimeLocalToIso(form.endDate);
+      const normalizedFrom =
+        form.timeFrom?.trim() || (startDateISO ? new Date(startDateISO).toISOString().slice(11, 16) : '');
+      const normalizedTo =
+        form.timeTo?.trim() || (endDateISO ? new Date(endDateISO).toISOString().slice(11, 16) : '');
+
+      if (!startDateISO) {
+        throw new Error('Bitte gib ein Startdatum mit Uhrzeit an.');
+      }
+
+      if (form.eventType !== 'einmalig') {
+        if (!form.recurrenceDays.length) {
+          throw new Error('Bitte wähle mindestens einen Wochentag für die Wiederholung aus.');
+        }
+        if (form.recurrenceUntil && form.recurrenceUntil < startDateISO.slice(0, 10)) {
+          throw new Error('Das Wiederholungsende muss nach dem Startdatum liegen.');
+        }
+      }
+
       const payload = {
         title: form.title,
         subtitle: form.subtitle,
         description: form.description,
         eventType: form.eventType,
-        startDate: datetimeLocalToIso(form.startDate),
-        endDate: datetimeLocalToIso(form.endDate),
+        startDate: startDateISO,
+        endDate: endDateISO,
         recurrence:
           form.eventType === 'einmalig'
             ? null
@@ -164,8 +230,8 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
                 repeatUntil: form.recurrenceUntil || null,
               },
         time: {
-          from: form.timeFrom,
-          to: form.timeTo,
+          from: normalizedFrom || null,
+          to: normalizedTo || null,
         },
         location: form.location || null,
         tags: form.tags,
@@ -184,7 +250,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
 
       await onSubmit(payload, status);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen');
+      setError(extractErrorMessage(err));
       return;
     } finally {
       setSaving(false);
@@ -236,25 +302,31 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
 
       <section className="rounded-xl bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Termin & Wiederholung</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Lege Beginn und Ende des Angebots fest. Die Uhrzeiten werden für die Übersicht und Filter verwendet.
+          Bei wiederkehrenden Terminen gilt das Startdatum als erste Durchführung.
+        </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DatetimeField
-            label="Startdatum"
+            label="Beginn (Datum & Uhrzeit)"
             required
             value={form.startDate}
             onChange={(value) => handleChange('startDate', value)}
           />
           <DatetimeField
-            label="Enddatum"
+            label="Ende (Datum & Uhrzeit)"
             value={form.endDate}
             onChange={(value) => handleChange('endDate', value)}
           />
-          <Field
-            label="Uhrzeit von"
+          <TimeField
+            label="Uhrzeit (Beginn)"
+            helper="Optional, wird ansonsten aus dem Beginn-Datum übernommen."
             value={form.timeFrom}
             onChange={(value) => handleChange('timeFrom', value)}
           />
-          <Field
-            label="Uhrzeit bis"
+          <TimeField
+            label="Uhrzeit (Ende)"
+            helper="Optional, wird ansonsten aus dem Ende-Datum übernommen."
             value={form.timeTo}
             onChange={(value) => handleChange('timeTo', value)}
           />
@@ -263,6 +335,9 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         {!recurrenceDisabled && (
           <div className="mt-6 space-y-4 rounded-lg border border-gray-200 p-4">
             <p className="text-sm font-semibold text-gray-700">Wiederholung</p>
+            <p className="text-xs text-gray-500">
+              Wähle aus, an welchen Wochentagen das Angebot stattfindet. Das Wiederholungsende begrenzt die Serie.
+            </p>
             <MultiSelectField
               label="Wochentage"
               value={form.recurrenceDays}
@@ -273,6 +348,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
               label="Wiederholen bis"
               value={form.recurrenceUntil}
               onChange={(value) => handleChange('recurrenceUntil', value)}
+              min={form.startDate ? form.startDate.slice(0, 10) : undefined}
             />
           </div>
         )}
@@ -305,7 +381,10 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
               value={form.image}
               onChange={(value) => handleChange('image', value)}
               placeholder="Bild auswählen"
-              options={media.map((item) => ({ label: item.alt || item.filename || 'Bild', value: item.id }))}
+              options={media.map((item) => ({
+                label: item.alt || item.filename || 'Bild',
+                value: item.id,
+              }))}
             />
           </div>
         )}
@@ -363,10 +442,10 @@ const Field = ({ label, required, value, onChange }) => (
   <label className="flex flex-col text-sm font-medium text-gray-700">
     {label}
     <input
-      className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
       value={value}
       onChange={(event) => onChange(event.target.value)}
       required={required}
+      className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
     />
   </label>
 );
@@ -397,15 +476,29 @@ const DatetimeField = ({ label, value, onChange, required }) => (
   </label>
 );
 
-const DateField = ({ label, value, onChange }) => (
+const DateField = ({ label, value, onChange, min }) => (
   <label className="flex flex-col text-sm font-medium text-gray-700">
     {label}
     <input
       type="date"
       value={value}
+      min={min}
       onChange={(event) => onChange(event.target.value)}
       className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
     />
+  </label>
+);
+
+const TimeField = ({ label, value, onChange, helper }) => (
+  <label className="flex flex-col text-sm font-medium text-gray-700">
+    {label}
+    <input
+      type="time"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
+    />
+    {helper && <span className="mt-1 text-xs text-gray-500">{helper}</span>}
   </label>
 );
 
@@ -445,9 +538,7 @@ const MultiSelectField = ({ label, value, onChange, options }) => (
         </option>
       ))}
     </select>
-    <span className="mt-1 text-xs text-gray-500">
-      Mehrfachauswahl mit gedrückter Strg/Cmd-Taste.
-    </span>
+    <span className="mt-1 text-xs text-gray-500">Mehrfachauswahl mit gedrückter Strg/Cmd-Taste.</span>
   </label>
 );
 

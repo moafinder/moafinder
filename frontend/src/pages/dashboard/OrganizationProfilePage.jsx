@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const emptyOrganization = {
   id: null,
@@ -39,13 +40,14 @@ const OrganizationProfilePage = () => {
   }, [user]);
 
   const normalizeOrganization = useCallback((doc) => {
-    if (!doc) return emptyOrganization;
+    const payloadDoc = doc?.doc ?? doc;
+    if (!payloadDoc) return emptyOrganization;
     return {
       ...emptyOrganization,
-      ...doc,
+      ...payloadDoc,
       address: {
         ...emptyOrganization.address,
-        ...(doc.address || {}),
+        ...(payloadDoc.address || {}),
       },
     };
   }, []);
@@ -62,6 +64,7 @@ const OrganizationProfilePage = () => {
       try {
         const response = await fetch(buildApiUrl(`/api/organizations?${ownerQuery}`), {
           credentials: 'include',
+          headers: withAuthHeaders(),
         });
         if (!response.ok) {
           throw new Error('Organisation konnte nicht geladen werden');
@@ -79,9 +82,9 @@ const OrganizationProfilePage = () => {
           const createResponse = await fetch(buildApiUrl('/api/organizations'), {
             method: 'POST',
             credentials: 'include',
-            headers: {
+            headers: withAuthHeaders({
               'Content-Type': 'application/json',
-            },
+            }),
             body: JSON.stringify({
               name: user.name || 'Neue Organisation',
               email: user.email,
@@ -144,9 +147,9 @@ const OrganizationProfilePage = () => {
       const response = await fetch(buildApiUrl(`/api/organizations/${organization.id}`), {
         method: 'PATCH',
         credentials: 'include',
-        headers: {
+        headers: withAuthHeaders({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({
           name: organization.name,
           email: organization.email,

@@ -2,12 +2,16 @@
 
 import path from 'node:path'
 import process from 'node:process'
-import { getPayload } from 'payload'
+import { fileURLToPath } from 'node:url'
 import type { Payload } from 'payload'
+import dotenv from 'dotenv'
 
 import type { Event, Location, Organization, Tag, User } from '../src/payload-types'
+import { PROTOTYPE_TAGS } from '../src/data/prototypeTags'
+import { slugify } from '../src/utils/slugify'
 
-const seedUserEmail = 'seed@moafinder.local'
+const adminEmail = 'admin@moafinder.local'
+const organizerEmail = 'organizer@moafinder.local'
 
 function log(message: string, extra?: unknown) {
   if (extra) {
@@ -17,39 +21,81 @@ function log(message: string, extra?: unknown) {
   }
 }
 
-function slugify(input: string) {
-  return input
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
 type PaginatedDocs<T> = { docs: T[]; totalDocs: number }
 
-async function ensureUser(payload: Payload) {
+async function ensureAdminUser(payload: Payload) {
   const existing = (await payload.find({
     collection: 'users',
-    where: { email: { equals: seedUserEmail } },
+    where: { email: { equals: adminEmail } },
     limit: 1,
   })) as PaginatedDocs<User>
 
   if (existing.totalDocs > 0) {
-    log('✔ Found existing seed user', seedUserEmail)
-    return existing.docs[0]
+    let user = existing.docs[0]
+    if (user.role !== 'admin') {
+      log('↻ Updating existing user to admin role', adminEmail)
+      user = (await payload.update({
+        collection: 'users',
+        id: user.id,
+        data: { role: 'admin' },
+        overrideAccess: true,
+        user: { role: 'admin', id: 'seed-script' } as any,
+      })) as unknown as User
+    } else {
+      log('✔ Found existing admin user', adminEmail)
+    }
+    return user
   }
 
-  log('➕ Creating seed user', seedUserEmail)
+  log('➕ Creating admin user', adminEmail)
   return (await payload.create({
     collection: 'users',
     data: {
-      email: seedUserEmail,
+      email: adminEmail,
       password: 'ChangeMe123!',
       name: 'Seed Admin',
       role: 'admin',
     },
     overrideAccess: true,
+    user: { role: 'admin', id: 'seed-script' } as any,
+  })) as User
+}
+
+async function ensureOrganizerUser(payload: Payload) {
+  const existing = (await payload.find({
+    collection: 'users',
+    where: { email: { equals: organizerEmail } },
+    limit: 1,
+  })) as PaginatedDocs<User>
+
+  if (existing.totalDocs > 0) {
+    let user = existing.docs[0]
+    if (user.role !== 'organizer') {
+      log('↻ Updating existing user to organizer role', organizerEmail)
+      user = (await payload.update({
+        collection: 'users',
+        id: user.id,
+        data: { role: 'organizer' },
+        overrideAccess: true,
+        user: { role: 'admin', id: 'seed-script' } as any,
+      })) as unknown as User
+    } else {
+      log('✔ Found existing organizer user', organizerEmail)
+    }
+    return user
+  }
+
+  log('➕ Creating organizer user', organizerEmail)
+  return (await payload.create({
+    collection: 'users',
+    data: {
+      email: organizerEmail,
+      password: 'ChangeMe123!',
+      name: 'Seed Organizer',
+      role: 'organizer',
+    },
+    overrideAccess: true,
+    user: { role: 'admin', id: 'seed-script' } as any,
   })) as User
 }
 
@@ -173,36 +219,62 @@ async function ensureEvent(
   })) as Event
 }
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 async function seed() {
-  process.env.PAYLOAD_CONFIG_PATH = path.resolve(process.cwd(), 'src/payload.config.ts')
+  dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true })
+
+  if (!process.env.PAYLOAD_SECRET) {
+    throw new Error('PAYLOAD_SECRET missing. Ensure backend/.env is configured before seeding.')
+  }
+
+  process.env.PAYLOAD_CONFIG_PATH = path.resolve(__dirname, '../src/payload.config.ts')
+  process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+
+  log('Using PAYLOAD_SECRET', process.env.PAYLOAD_SECRET)
+
+  process.env.PAYLOAD_SECRET = process.env.PAYLOAD_SECRET.trim()
+
+  const { getPayload } = await import('payload')
+  const configModule = await import(process.env.PAYLOAD_CONFIG_PATH)
+  const config = configModule.default ?? configModule
+
+  log('Config secret before init', config.secret)
+  config.secret = process.env.PAYLOAD_SECRET
 
   const payload = await getPayload({
-    config: import(process.env.PAYLOAD_CONFIG_PATH),
+    config,
+    secret: process.env.PAYLOAD_SECRET,
   })
 
-  const user = await ensureUser(payload)
+  const adminUser = await ensureAdminUser(payload)
+  const organizerUser = await ensureOrganizerUser(payload)
 
-  const tags = await Promise.all([
-    ensureTag(payload, { name: 'Kinder', category: 'target', color: '#7CB92C' }),
-    ensureTag(payload, { name: 'Jugendliche', category: 'target', color: '#FFAA33' }),
-    ensureTag(payload, { name: 'Erwachsene', category: 'target', color: '#3366CC' }),
-    ensureTag(payload, { name: 'Begegnung & Party', category: 'topic', color: '#F97316' }),
-    ensureTag(payload, { name: 'Musik & Gesang', category: 'topic', color: '#8B5CF6' }),
-    ensureTag(payload, { name: 'Antirassismus & Empowerment', category: 'topic', color: '#0EA5E9' }),
-    ensureTag(payload, { name: 'Einmalig', category: 'format', color: '#6366F1' }),
-    ensureTag(payload, { name: 'Regelmäßig', category: 'format', color: '#EC4899' }),
-  ])
+  const tags = await Promise.all(PROTOTYPE_TAGS.map((tag) => ensureTag(payload, tag)))
 
   const tagByName = Object.fromEntries(tags.map((tag) => [tag.name, tag]))
 
-  const organization = await ensureOrganization(payload, {
+  let organization = await ensureOrganization(payload, {
     name: 'Stephans Nachbarschaftsladen',
     email: 'kontakt@stephans.example',
-    ownerId: user.id,
+    ownerId: organizerUser.id,
     contactPerson: 'S. Beispiel',
     website: 'https://stephans.example',
     phone: '+49 30 1234567',
   })
+
+  // If organization already existed with a different owner, reassign to organizer user
+  if ((organization as any).owner !== organizerUser.id) {
+    log('↻ Reassigning organization owner to organizer user')
+    organization = (await payload.update({
+      collection: 'organizations',
+      id: (organization as any).id,
+      data: { owner: organizerUser.id },
+      overrideAccess: true,
+      user: { role: 'admin', id: 'seed-script' } as any,
+    })) as any
+  }
 
   const locations = await Promise.all([
     ensureLocation(payload, {

@@ -1,4 +1,5 @@
 import { buildApiUrl } from './baseUrl';
+import { withAuthHeaders } from '../utils/authHeaders';
 
 function createSearchParams(params) {
   const search = new URLSearchParams();
@@ -21,6 +22,7 @@ export async function listLocations({ limit = 200, ...rest } = {}) {
   const params = createSearchParams({ limit, ...rest });
   const response = await fetch(buildApiUrl(`/api/locations?${params.toString()}`), {
     credentials: 'include',
+    headers: withAuthHeaders(),
   });
   if (!response.ok) {
     throw new Error('Konnte Orte nicht laden');
@@ -36,6 +38,7 @@ export async function getLocation(id, params = {}) {
   const suffix = search.toString() ? `?${search.toString()}` : '';
   const response = await fetch(buildApiUrl(`/api/locations/${id}${suffix}`), {
     credentials: 'include',
+    headers: withAuthHeaders(),
   });
   if (response.status === 404) {
     return null;

@@ -3,6 +3,7 @@ import { listEvents } from '../../api/events';
 import { listMedia } from '../../api/media';
 import { listLocations } from '../../api/locations';
 import { buildApiUrl } from '../../api/baseUrl';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const AdminOverviewPage = () => {
   const [stats, setStats] = useState({ users: 0, events: 0, organizations: 0, media: 0, locations: 0 });
@@ -17,10 +18,16 @@ const AdminOverviewPage = () => {
       try {
         const [eventsRes, organizationsRes, mediaRes, locationsRes, usersRes] = await Promise.all([
           listEvents({ limit: 1 }),
-          fetch(buildApiUrl('/api/organizations?limit=1'), { credentials: 'include' }).then((res) => res.json()),
+          fetch(buildApiUrl('/api/organizations?limit=1'), {
+            credentials: 'include',
+            headers: withAuthHeaders(),
+          }).then((res) => res.json()),
           listMedia({ limit: 1 }),
           listLocations({ limit: 1 }),
-          fetch(buildApiUrl('/api/users?limit=1'), { credentials: 'include' }).then((res) => res.json()),
+          fetch(buildApiUrl('/api/users?limit=1'), {
+            credentials: 'include',
+            headers: withAuthHeaders(),
+          }).then((res) => res.json()),
         ]);
         if (!mounted) return;
         setStats({

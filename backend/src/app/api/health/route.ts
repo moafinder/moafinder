@@ -85,6 +85,18 @@ const healthResponse = async () => {
   const pingTimeoutMs = parseDuration(process.env.HEALTHCHECK_PING_TIMEOUT_MS, 1500)
   const warmupActive = process.uptime() * 1000 < warmupWindowMs
 
+  // Allow skipping DB checks explicitly to prevent connect attempts when DB is known to be offline (e.g., local dev)
+  if (process.env.HEALTHCHECK_SKIP_DB === 'true') {
+    return Response.json(
+      {
+        status: 'degraded',
+        message: 'DB check skipped by HEALTHCHECK_SKIP_DB',
+        uptimeMs: Math.round(process.uptime() * 1000),
+      },
+      { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    )
+  }
+
   try {
     const payload = await getCachedPayload()
     const connectivity = resolveMongoConnectivity(payload)
@@ -122,6 +134,21 @@ const healthResponse = async () => {
       return Response.json(
         {
           status: 'starting',
+          message,
+          uptimeMs: Math.round(process.uptime() * 1000),
+        },
+        { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      )
+    }
+
+    // In development, or when explicitly tolerated, report degraded health without failing the route.
+    const tolerateDBFailure =
+      process.env.HEALTHCHECK_TOLERATE_DB_FAILURE === 'true' || process.env.NODE_ENV !== 'production'
+
+    if (tolerateDBFailure) {
+      return Response.json(
+        {
+          status: 'degraded',
           message,
           uptimeMs: Math.round(process.uptime() * 1000),
         },

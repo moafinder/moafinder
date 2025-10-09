@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { updateEvent } from '../../api/events';
 import ListCard from './components/ListCard';
 import { getListColor } from '../../utils/colorPalette';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const OrganizerArchivePage = () => {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ const OrganizerArchivePage = () => {
         });
         const response = await fetch(buildApiUrl(`/api/events?${params.toString()}`), {
           credentials: 'include',
+          headers: withAuthHeaders(),
         });
         if (!response.ok) throw new Error('Archiv konnte nicht geladen werden');
         const data = await response.json();
@@ -111,7 +113,7 @@ const OrganizerArchivePage = () => {
                 </button>
                 <a
                   href={`/dashboard/events/${event.id}/edit`}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
+                  className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
                 >
                   Bearbeiten
                 </a>

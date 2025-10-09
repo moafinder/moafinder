@@ -17,9 +17,11 @@ const ListCard = ({ color, tag, title, subtitle, meta, children, actions = [] })
       {meta && <p className="text-xs text-gray-500">{meta}</p>}
     </div>
     {actions && actions.length > 0 && (
-      <div className="flex flex-col justify-center gap-2 md:items-end">
+      <div className="flex w-full flex-col justify-center gap-2 md:w-auto md:flex-shrink-0 md:items-end">
         {actions.map((action, index) => (
-          <div key={index}>{action}</div>
+          <div key={index} className="w-full md:w-auto">
+            {action}
+          </div>
         ))}
       </div>
     )}

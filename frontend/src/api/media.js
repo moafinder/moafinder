@@ -1,11 +1,14 @@
 import { buildApiUrl } from './baseUrl';
+import { withAuthHeaders } from '../utils/authHeaders';
 
 const API_URL = '/api/media';
 
 async function request(url, options = {}) {
+  const { headers: providedHeaders, ...rest } = options;
   const response = await fetch(buildApiUrl(url), {
     credentials: 'include',
-    ...options,
+    headers: withAuthHeaders(providedHeaders || {}),
+    ...rest,
   });
 
   if (!response.ok) {
@@ -28,4 +31,3 @@ export async function listMedia(params = {}) {
 export async function deleteMedia(id) {
   return request(`${API_URL}/${id}`, { method: 'DELETE' });
 }
-

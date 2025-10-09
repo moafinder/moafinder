@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const StatCard = ({ label, value, description }) => (
   <div className="rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -47,6 +48,7 @@ const OrganizerDashboardPage = () => {
         });
         const response = await fetch(buildApiUrl(`/api/events?${params.toString()}`), {
           credentials: 'include',
+          headers: withAuthHeaders(),
         });
 
         if (!response.ok) {
@@ -166,13 +168,13 @@ const OrganizerDashboardPage = () => {
               <div className="flex items-center gap-3 text-sm">
                 <a
                   href={`/dashboard/events/${event.id}/edit`}
-                  className="rounded-md border border-gray-200 px-3 py-1 font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
+                  className="inline-flex items-center justify-center rounded-md border border-gray-200 px-3 py-1 font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
                 >
                   Bearbeiten
                 </a>
                 <a
                   href={`/event/${event.id}`}
-                  className="rounded-md bg-[#7CB92C] px-3 py-1 font-semibold text-black transition hover:bg-[#5a8b20]"
+                  className="inline-flex items-center justify-center rounded-md bg-[#7CB92C] px-3 py-1 font-semibold text-black transition hover:bg-[#5a8b20]"
                 >
                   Vorschau
                 </a>

@@ -1,11 +1,14 @@
 import { buildApiUrl } from './baseUrl';
+import { withAuthHeaders } from '../utils/authHeaders';
 
 const API_URL = '/api/events';
 
 async function request(url, options = {}) {
+  const { headers: providedHeaders, ...rest } = options;
   const response = await fetch(buildApiUrl(url), {
     credentials: 'include',
-    ...options,
+    headers: withAuthHeaders(providedHeaders || {}),
+    ...rest,
   });
 
   if (!response.ok) {

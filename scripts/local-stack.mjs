@@ -17,7 +17,7 @@ function usage(message) {
   if (message) {
     console.error(message)
   }
-  console.error('Usage: node scripts/local-stack.mjs <up|down> [target] [--skip-install] [--keep-mongo] [--target=name]')
+  console.error('Usage: node scripts/local-stack.mjs <up|down> [target] [--skip-install] [--keep-mongo] [--seed] [--target=name]')
   process.exit(message ? 1 : 0)
 }
 
@@ -26,6 +26,7 @@ function parseOptions(args) {
     target: 'local',
     skipInstall: false,
     keepMongo: false,
+    seed: false,
   }
 
   let positionalTargetConsumed = false
@@ -37,6 +38,10 @@ function parseOptions(args) {
     }
     if (arg === '--keep-mongo') {
       options.keepMongo = true
+      continue
+    }
+    if (arg === '--seed') {
+      options.seed = true
       continue
     }
     if (arg.startsWith('--target=')) {
@@ -120,6 +125,25 @@ function removePidFile() {
   }
 }
 
+function waitForMongoReady() {
+  // Wait for Mongo to accept connections using docker compose exec + mongosh ping
+  const maxAttempts = 60
+  for (let i = 1; i <= maxAttempts; i++) {
+    const result = spawnSync('docker', ['compose', 'exec', '-T', 'mongo', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 }).ok'], {
+      cwd: backendDir,
+      env: process.env,
+    })
+    const out = (result.stdout || Buffer.from('')).toString().trim()
+    if (result.status === 0 && out === '1') {
+      console.log('Mongo is ready (ping ok).')
+      return
+    }
+    process.stdout.write('.')
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500)
+  }
+  console.warn('\nMongo readiness check timed out; continuing anyway.')
+}
+
 async function runUp(options) {
   ensureEnvsetExists(options.target)
 
@@ -131,11 +155,21 @@ async function runUp(options) {
   }
 
   runSync('docker', ['compose', 'up', '-d', 'mongo'], backendDir)
+  waitForMongoReady()
 
-  const backendProc = spawn('pnpm', ['dev'], {
+  const backendEnv = {
+    ...process.env,
+    // Backend should use local Mongo unless explicitly overridden
+    DATABASE_URI: process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/moafinder-local',
+    HEALTHCHECK_SKIP_DB: 'false',
+    HEALTHCHECK_TOLERATE_DB_FAILURE: process.env.HEALTHCHECK_TOLERATE_DB_FAILURE || 'true',
+    PAYLOAD_SKIP_DB_AUTH: process.env.PAYLOAD_SKIP_DB_AUTH || 'false',
+  }
+
+  const backendProc = spawn('pnpm', ['devsafe'], {
     cwd: backendDir,
     stdio: 'inherit',
-    env: process.env,
+    env: backendEnv,
   })
 
   const frontendProc = spawn('pnpm', ['dev', '--', '--host', 'localhost'], {
@@ -145,6 +179,18 @@ async function runUp(options) {
   })
 
   writePidFile({ backend: backendProc.pid, frontend: frontendProc.pid })
+
+  // Optionally seed demo data once backend + mongo are up
+  if (options.seed) {
+    setTimeout(() => {
+      try {
+        console.log('\nSeeding demo data...')
+        runSync('pnpm', ['run', 'seed'], backendDir)
+      } catch (e) {
+        console.warn(`Seeding failed: ${e.message}`)
+      }
+    }, 2000)
+  }
 
   console.log('\nLocal stack is running:')
   console.log('  Backend:  http://localhost:3000')

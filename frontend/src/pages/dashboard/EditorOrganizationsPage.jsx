@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const statusOptions = [
   { value: 'all', label: 'Alle' },
@@ -25,6 +26,7 @@ const EditorOrganizationsPage = () => {
         const params = new URLSearchParams({ limit: '200', sort: 'name' });
         const response = await fetch(buildApiUrl(`/api/organizations?${params.toString()}`), {
           credentials: 'include',
+          headers: withAuthHeaders(),
         });
         if (!response.ok) throw new Error('Organisationen konnten nicht geladen werden');
         const data = await response.json();
@@ -73,7 +75,7 @@ const EditorOrganizationsPage = () => {
       const response = await fetch(buildApiUrl(`/api/organizations/${id}`), {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ approved }),
       });
       if (!response.ok) throw new Error('Status konnte nicht aktualisiert werden');

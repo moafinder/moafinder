@@ -12,7 +12,7 @@ const OrganizerEventCreatePage = () => {
       await createEvent(payload);
       navigate('/dashboard/events', { replace: true, state: { message: getSuccessMessage(status) } });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erstellen fehlgeschlagen');
+      setError(extractErrorMessage(err));
     }
   };
 
@@ -38,3 +38,20 @@ function getSuccessMessage(status) {
 }
 
 export default OrganizerEventCreatePage;
+
+function extractErrorMessage(err) {
+  if (!err) return 'Erstellen fehlgeschlagen.';
+  const raw = err instanceof Error ? err.message : String(err);
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed?.errors) && parsed.errors.length > 0) {
+      return parsed.errors[0].message ?? 'Bitte prüfe die Eingaben.';
+    }
+  } catch {
+    // ignore
+  }
+  if (/ValidationError/i.test(raw)) {
+    return 'Bitte prüfe die Eingaben. Pflichtfelder sind erforderlich.';
+  }
+  return raw || 'Erstellen fehlgeschlagen.';
+}

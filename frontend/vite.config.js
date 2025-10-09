@@ -10,6 +10,11 @@ export default defineConfig({
     }),
   ],
 
+  server: {
+    host: 'localhost',
+    port: 5173,
+  },
+
   // Ensure JSX transform uses the automatic runtime (no need to import React)
   esbuild: {
     jsx: 'automatic',

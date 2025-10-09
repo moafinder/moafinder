@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const OrganizerMediaPage = () => {
   const { user } = useAuth();
@@ -16,6 +17,110 @@ const OrganizerMediaPage = () => {
     () => media.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [media],
   );
+
+  const mediaBaseUrl = useMemo(() => {
+    try {
+      const apiUrl = new URL(buildApiUrl('/'));
+      if (apiUrl.pathname.endsWith('/api/') || apiUrl.pathname.endsWith('/api')) {
+        apiUrl.pathname = apiUrl.pathname.replace(/\/api\/?$/, '/');
+      }
+      return apiUrl;
+    } catch (error) {
+      return null;
+    }
+  }, []);
+
+  const resolveMediaUrl = useCallback(
+    (rawUrl) => {
+      if (!rawUrl) return null;
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
+      if (!mediaBaseUrl) return rawUrl;
+      return new URL(rawUrl.replace(/^\//, ''), mediaBaseUrl).toString();
+    },
+    [mediaBaseUrl],
+  );
+
+  const getMediaKey = useCallback((item) => item?.id ?? item?._id ?? item?.filename ?? item?.url ?? null, []);
+
+  const [previewUrls, setPreviewUrls] = useState({});
+  const previewUrlsRef = useRef(previewUrls);
+
+  useEffect(() => {
+    previewUrlsRef.current = previewUrls;
+  }, [previewUrls]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrlsRef.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const missingItems = sortedMedia.filter((item) => {
+      const key = getMediaKey(item);
+      if (!key) return false;
+      if (previewUrls[key]) return false;
+      const rawUrl = item.sizes?.thumbnail?.url || item.url || item.filename;
+      return Boolean(rawUrl && resolveMediaUrl(rawUrl));
+    });
+
+    if (!missingItems.length) return undefined;
+
+    const fetchPreviews = async () => {
+      const entries = await Promise.all(
+        missingItems.map(async (item) => {
+          const key = getMediaKey(item);
+          const rawUrl = item.sizes?.thumbnail?.url || item.url || item.filename;
+          const absoluteUrl = resolveMediaUrl(rawUrl);
+          if (!key || !absoluteUrl) return null;
+          try {
+            const response = await fetch(absoluteUrl, {
+              credentials: 'include',
+              headers: withAuthHeaders(),
+            });
+            if (!response.ok) return null;
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            return [key, objectUrl];
+          } catch (err) {
+            console.warn('Konnte Medienvorschau nicht laden', err);
+            return null;
+          }
+        }),
+      );
+
+      if (cancelled) {
+        entries.forEach((entry) => {
+          if (entry && entry[1]) URL.revokeObjectURL(entry[1]);
+        });
+        return;
+      }
+
+      const validEntries = entries.filter((entry) => entry && entry[0] && entry[1]);
+      if (validEntries.length) {
+        setPreviewUrls((prev) => {
+          const next = { ...prev };
+          validEntries.forEach(([key, url]) => {
+            if (!next[key]) {
+              next[key] = url;
+            } else {
+              URL.revokeObjectURL(url);
+            }
+          });
+          return next;
+        });
+      }
+    };
+
+    fetchPreviews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sortedMedia, resolveMediaUrl, getMediaKey, previewUrls]);
 
   useEffect(() => {
     let mounted = true;
@@ -33,6 +138,7 @@ const OrganizerMediaPage = () => {
         });
         const response = await fetch(buildApiUrl(`/api/media?${params.toString()}`), {
           credentials: 'include',
+          headers: withAuthHeaders(),
         });
 
         if (!response.ok) {
@@ -74,18 +180,35 @@ const OrganizerMediaPage = () => {
     formData.append('alt', altText.trim());
 
     try {
-      const response = await fetch(buildApiUrl('/api/media'), {
+      const response = await fetch(buildApiUrl(`/api/media?alt=${encodeURIComponent(altText.trim())}`), {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers: withAuthHeaders(),
       });
 
+      let created = null;
+
       if (!response.ok) {
-        throw new Error('Upload fehlgeschlagen');
+        try {
+          const payload = await response.json();
+          const message = payload?.errors?.[0]?.message ?? payload?.message ?? 'Upload fehlgeschlagen';
+          throw new Error(message);
+        } catch (parseError) {
+          const text = await response.text();
+          throw new Error(text || 'Upload fehlgeschlagen');
+        }
+      } else {
+        const payload = await response.json();
+        created = payload?.doc ?? payload;
       }
 
-      const created = await response.json();
-      setMedia((prev) => [created, ...prev]);
+      if (created) {
+        setMedia((prev) => [created, ...prev]);
+      } else {
+        // Fallback: refetch list so UI stays consistent even if response shape was unexpected.
+        setMedia((prev) => prev.slice());
+      }
       setFile(null);
       setAltText('');
       setMessage('Bild wurde hochgeladen.');
@@ -96,17 +219,61 @@ const OrganizerMediaPage = () => {
     }
   };
 
+  const handlePreview = async (item) => {
+    setError('');
+    const rawUrl = item.url || item.sizes?.original?.url || item.filename || '';
+    const absoluteUrl = resolveMediaUrl(rawUrl);
+    if (!absoluteUrl) {
+      setError('Vorschau konnte nicht geöffnet werden.');
+      return;
+    }
+
+    try {
+      const response = await fetch(absoluteUrl, {
+        credentials: 'include',
+        headers: withAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        let message = 'Vorschau konnte nicht geladen werden.';
+        try {
+          const payload = await response.json();
+          message = payload?.errors?.[0]?.message ?? payload?.message ?? message;
+        } catch {
+          const text = await response.text();
+          if (text) message = text;
+        }
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Vorschau konnte nicht geladen werden.');
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Bild wirklich löschen?')) return;
     try {
       const response = await fetch(buildApiUrl(`/api/media/${id}`), {
         method: 'DELETE',
         credentials: 'include',
+        headers: withAuthHeaders(),
       });
       if (!response.ok) {
         throw new Error('Löschen fehlgeschlagen');
       }
       setMedia((prev) => prev.filter((item) => item.id !== id));
+      setPreviewUrls((prev) => {
+        if (!prev[id]) return prev;
+        const next = { ...prev };
+        URL.revokeObjectURL(next[id]);
+        delete next[id];
+        return next;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
     }
@@ -176,22 +343,32 @@ const OrganizerMediaPage = () => {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sortedMedia.map((item) => (
-              <article key={item.id} className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                {item.url ? (
-                  <img src={item.url} alt={item.alt || ''} className="h-40 w-full object-cover" />
-                ) : (
-                  <div className="flex h-40 items-center justify-center bg-gray-100 text-sm text-gray-500">Keine Vorschau</div>
-                )}
+            {sortedMedia.map((item, index) => {
+              const cacheKey = getMediaKey(item) ?? `media-${index}`;
+              const previewUrl = cacheKey ? previewUrls[cacheKey] : null;
+              return (
+                <article
+                  key={cacheKey ?? `media-${index}`}
+                  className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+                >
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={item.alt || ''} className="h-40 w-full object-cover" />
+                  ) : (
+                    <div className="flex h-40 items-center justify-center bg-gray-100 text-sm text-gray-500">Keine Vorschau</div>
+                  )}
                 <div className="flex flex-1 flex-col p-4">
                   <p className="text-sm font-semibold text-gray-800">{item.alt || 'Ohne Beschreibung'}</p>
                   <p className="mt-1 text-xs text-gray-500">
-                    Hochgeladen am {new Date(item.createdAt).toLocaleDateString('de-DE')}
+                    Hochgeladen am {item.createdAt ? new Date(item.createdAt).toLocaleDateString('de-DE') : '—'}
                   </p>
                   <div className="mt-auto flex items-center justify-between pt-4 text-xs text-gray-500">
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#417225] hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => handlePreview(item)}
+                      className="font-semibold text-[#417225] hover:underline"
+                    >
                       Anzeigen
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(item.id)}
@@ -202,7 +379,8 @@ const OrganizerMediaPage = () => {
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

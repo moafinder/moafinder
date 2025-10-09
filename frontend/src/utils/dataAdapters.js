@@ -1,4 +1,28 @@
 // Utility functions to adapt Payload CMS documents into shapes the frontend can render easily.
+import { buildApiUrl } from '../api/baseUrl';
+
+let mediaBaseUrl;
+function getMediaBaseUrl() {
+  if (mediaBaseUrl) return mediaBaseUrl;
+  try {
+    const apiUrl = new URL(buildApiUrl('/'));
+    if (apiUrl.pathname.endsWith('/api/') || apiUrl.pathname.endsWith('/api')) {
+      apiUrl.pathname = apiUrl.pathname.replace(/\/api\/?$/, '/');
+    }
+    mediaBaseUrl = apiUrl;
+    return mediaBaseUrl;
+  } catch (error) {
+    return null;
+  }
+}
+
+function resolveMediaUrl(rawUrl) {
+  if (!rawUrl) return null;
+  if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
+  const base = getMediaBaseUrl();
+  if (!base) return rawUrl;
+  return new URL(rawUrl.replace(/^\//, ''), base).toString();
+}
 
 export function adaptLocation(doc) {
   if (!doc || typeof doc !== 'object') {
@@ -20,7 +44,7 @@ export function adaptLocation(doc) {
   const adaptedImage =
     image && typeof image === 'object'
       ? {
-          url: image.url ?? image?.sizes?.thumbnail?.url ?? null,
+          url: resolveMediaUrl(image.url ?? image?.sizes?.thumbnail?.url ?? null),
           alt: image.alt ?? name,
         }
       : null;
@@ -127,7 +151,7 @@ export function adaptEvent(doc) {
   const adaptedImage =
     image && typeof image === 'object'
       ? {
-          url: image.url ?? image?.sizes?.thumbnail?.url ?? null,
+          url: resolveMediaUrl(image.url ?? image?.sizes?.thumbnail?.url ?? null),
           alt: image.alt ?? title,
         }
       : null;

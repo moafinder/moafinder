@@ -35,12 +35,12 @@ describe('Content workflow', () => {
     process.env.DATABASE_URI = TEST_DATABASE_URI
     const config = await configPromise
     payload = await getPayload({ config })
-    await payload.db.client?.db().dropDatabase()
+    await (payload.db as any).connection?.client?.db().dropDatabase?.()
   })
 
   afterAll(async () => {
-    await payload?.db.client?.db().dropDatabase()
-    await payload?.db.client?.close()
+    await (payload?.db as any).connection?.client?.db().dropDatabase?.()
+    await (payload?.db as any).connection?.client?.close?.()
     tempFiles.forEach((file) => {
       try {
         fs.unlinkSync(file)
@@ -136,7 +136,7 @@ describe('Content workflow', () => {
     mediaOne = await payload.create({
       collection: 'media',
       filePath: filePath1,
-      data: { alt: 'Testbild 1' },
+      data: { alt: 'Testbild 1' } as any,
       user: createdUser,
     })
     expect(getId(mediaOne.owner)).toBe(createdUser.id)
@@ -145,7 +145,7 @@ describe('Content workflow', () => {
     mediaTwo = await payload.create({
       collection: 'media',
       filePath: filePath2,
-      data: { alt: 'Testbild 2' },
+      data: { alt: 'Testbild 2' } as any,
       user: createdUser,
     })
   })

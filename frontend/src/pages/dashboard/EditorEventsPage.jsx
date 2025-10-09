@@ -169,7 +169,7 @@ const EditorEventsPage = () => {
                     href={`/event/${event.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
+                    className="inline-flex items-center justify-center rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#7CB92C] hover:text-[#417225]"
                   >
                     Öffnen
                   </a>,

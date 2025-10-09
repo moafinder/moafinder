@@ -83,13 +83,17 @@ const EventDetailPage = () => {
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2">
             {/* Event Image */}
-            <div className="mb-6">
-              <img 
-                src={event.image} 
-                alt={event.title}
-                className="w-full h-96 object-cover rounded-lg"
-              />
-            </div>
+            {event.image && (
+              <div className="mb-6 rounded-lg bg-gray-100">
+                <div className="flex h-96 items-center justify-center">
+                  <img 
+                    src={event.image} 
+                    alt={event.title}
+                    className="max-h-full w-auto max-w-full object-contain"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Event Description */}
             <div className="prose max-w-none mb-8">

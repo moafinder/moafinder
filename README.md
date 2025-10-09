@@ -59,8 +59,74 @@ Run everything (env files, MongoDB, backend, frontend) with:
 node scripts/local-stack.mjs up [target]
 ```
 - `target` defaults to `local`; pass another envset name or `--target=production` when needed.
-- Add `--skip-install` to reuse existing `node_modules`, or `--keep-mongo` to keep the Mongo container running after shutdown.
+- Add `--skip-install` to reuse existing `node_modules`, or `--keep-mongo` to keep the Mongo container running after shutdown. Add `--seed` to preload demo data and a default admin user.
 - Stop the stack with `Ctrl+C` (the script tears everything down) or `node scripts/local-stack.mjs down`.
+
+### Troubleshooting & FAQ
+
+#### “Functions cannot be passed directly to Client Components …” on `/admin`
+
+Symptom:
+- Visiting `http://localhost:3000/admin` shows a 500 with the message “Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with 'use server'.” Sometimes only in dev (HMR), sometimes intermittently.
+
+Why this happens:
+- Next 15/React 19 are strict about passing functions from Server Components to Client Components. If a function crosses a package boundary or HMR leaves stale code around, it may no longer be recognized as a server action and will error.
+
+What we changed to fix it (and why it now works):
+- Avoid passing a function prop across the boundary entirely. The admin layout now renders a local server wrapper that hands a simple HTTP bridge to the Client UI:
+  - `backend/src/app/(payload)/layout.tsx` renders `CustomRootLayout` (no function props passed).
+  - `backend/src/app/(payload)/CustomRootLayout.tsx` builds the client config and renders a client bridge.
+  - `backend/src/app/(payload)/AdminClientBridge.tsx` (client) renders `RootProvider` and implements `serverFunction` as a POST to our local endpoint.
+  - `backend/src/app/(payload)/api/server-functions/route.ts` receives those POSTs and executes Payload’s server functions.
+
+This completely sidesteps the “server action serialization” path, so the error goes away even under HMR.
+
+If you ever need to clear a bad HMR state:
+- Stop dev, delete Next cache, and start fresh:
+  - `rm -rf backend/.next`
+  - `pnpm -C backend devsafe`
+
+#### Dev without MongoDB keeps crashing or health check fails
+
+Problem:
+- Without a running Mongo, some endpoints attempted to connect and crashed.
+
+Changes made and how to use them:
+- Health endpoint can be tolerant in dev: set either of these in `backend/.env.local` and restart dev:
+  - `HEALTHCHECK_SKIP_DB=true` (skip DB checks and return `status: degraded`)
+  - `HEALTHCHECK_TOLERATE_DB_FAILURE=true` (treat DB failures as degraded, not 503)
+- Admin wrapper skips DB auth when allowed in dev: set `PAYLOAD_SKIP_DB_AUTH=true` to avoid DB calls for “who am I”.
+- A dev-friendly override for `GET /api/users/me` returns `{ user: null }` when the DB is intentionally disabled.
+
+Recommended: for full admin functionality, use the local-stack script to run Mongo alongside the backend:
+```bash
+node scripts/local-stack.mjs up --seed
+```
+This will:
+- Render env files, start Mongo via Docker, wait for it to be ready, start backend (`devsafe`) and frontend, and (optionally) seed demo data.
+
+#### TypeScript shows only one error during `next build`
+
+Use TypeScript directly to see all errors at once:
+```bash
+pnpm -C backend exec tsc -p tsconfig.json --noEmit --pretty false
+```
+
+#### Where did the Express preMiddleware go?
+
+In a Next-based Payload app the Express server is not used. We moved the CORS header to Next config:
+- `backend/next.config.mjs` → `headers()` sets `Access-Control-Allow-Headers` globally.
+
+#### Seeded admin credentials
+
+- Email: `admin@moafinder.local`
+- Password: `ChangeMe123!`
+
+Also seeded for organizer testing:
+- Email: `organizer@moafinder.local`
+- Password: `ChangeMe123!`
+
+They’re created by the seed script (e.g. `node scripts/local-stack.mjs up --seed` or `pnpm -C backend run seed`).
 
 ### Manual steps
 1. **Install dependencies**

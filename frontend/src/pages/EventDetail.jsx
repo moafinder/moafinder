@@ -140,12 +140,14 @@ const EventDetail = () => {
       </header>
 
       {event.image?.url && (
-        <div className="w-full overflow-hidden rounded-lg shadow">
-          <img
-            src={event.image.url}
-            alt={event.image.alt ?? event.title}
-            className="h-72 w-full object-cover md:h-96"
-          />
+        <div className="w-full rounded-lg bg-gray-100 shadow">
+          <div className="flex h-72 w-full items-center justify-center md:h-96">
+            <img
+              src={event.image.url}
+              alt={event.image.alt ?? event.title}
+              className="max-h-full w-auto max-w-full object-contain"
+            />
+          </div>
         </div>
       )}
 
