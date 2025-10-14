@@ -1,7 +1,17 @@
 import type { ImportMap } from 'payload'
 import React from 'react'
 import { cookies, headers } from 'next/headers'
-import { rtlLanguages } from '@payloadcms/translations'
+// Local fallback list of RTL languages to avoid requiring @payloadcms/translations
+const rtlLanguages = [
+  'ar', // Arabic
+  'he', // Hebrew
+  'fa', // Persian (Farsi)
+  'ur', // Urdu
+  'ps', // Pashto
+  'ku', // Kurdish (Sorani)
+  'dv', // Dhivehi
+  'yi', // Yiddish
+] as const
 import { getClientConfig } from '@payloadcms/ui/utilities/getClientConfig'
 import { getPayload } from 'payload'
 import { getNextRequestI18n } from '@payloadcms/next/utilities'
