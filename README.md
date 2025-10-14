@@ -45,7 +45,7 @@ VITE_API_BASE_URL=<https://your-api-domain>
 When running the Vite dev server without a dedicated backend domain you can leave this empty (`VITE_API_BASE_URL=`) so requests continue to target the relative `/api/...` paths proxied by the development server.
 
 ## Production Architecture
-- **Frontend:** React single-page app hosted on AWS Amplify (`https://main.d1i5ilm5fqb0i9.amplifyapp.com`). Amplify rewrites `/api/*` calls to the backend.
+- **Frontend:** React single-page app hosted on AWS Amplify (`https://main.dgfhrurhtm4pa.amplifyapp.com`). Amplify rewrites `/api/*` calls to the backend.
 - **Backend:** Payload CMS + Next.js running on AWS App Runner (container image in Amazon ECR). The current service URL can be found in the App Runner console (e.g. `https://<service-id>.<region>.awsapprunner.com`).
 - **Database:** MongoDB Atlas cluster (MongoDB Atlas UI → Database → Connect for the latest connection string). Both local development and App Runner use this URI.
 
@@ -186,7 +186,7 @@ pnpm lint
 Add local machine IP and App Runner egress IPs to the Atlas access list before deploying (`Network Access → Add IP Address`).
 
 ### 1. Frontend (AWS Amplify)
-The Amplify app is already connected to your repository and available at <https://main.d1i5ilm5fqb0i9.amplifyapp.com/>.
+The Amplify app is already connected to your repository and available at <https://main.dgfhrurhtm4pa.amplifyapp.com/>.
 
 1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain you noted earlier (e.g. `https://<service-id>.eu-central-1.awsapprunner.com`). The change triggers a redeploy.
 
@@ -203,44 +203,56 @@ The Amplify app is already connected to your repository and available at <https:
 Amplify rebuilds automatically whenever you push to the connected Git branch.
 
 ### 2. Backend (AWS App Runner)
-Build the Docker image locally and push it to ECR. Replace `<ACCOUNT_ID>` and `<REGION>` with your AWS account and region. If you already created the repository, reuse the URI `913283587816.dkr.ecr.eu-central-1.amazonaws.com/moabit-backend`.
+
+#### 2.1 Prepare the environment set
+1. Copy `env/targets/production.example.envset` to `env/targets/production.envset`.
+2. Fill the placeholders with production credentials:
+   - `[backend]` → `DATABASE_URI`, `PAYLOAD_SECRET`, `CORS_ORIGINS=https://main.dgfhrurhtm4pa.amplifyapp.com`, and Gmail SMTP settings (`SMTP_ENABLE=true`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `CONTACT_RECIPIENT_EMAILS`, `EVENT_APPROVAL_NOTIFICATION_EMAILS`).
+   - `[frontend]` → `VITE_API_BASE_URL` (temporary value such as `https://placeholder/api`; the deploy script overwrites it with the live domain).
+   - `[apprunner]` → `PAYLOAD_PUBLIC_SERVER_URL` and `CORS_ORIGINS` (usually the same as in `[backend]`).
+3. Keep the envset file out of git; the deploy script regenerates `backend/.env`, `frontend/.env.production`, and `env/out/production-apprunner.env` from it.
+
+#### 2.2 First-time setup (one-time)
+If the App Runner service already exists, skip to the next section.
+
+1. Create (or reuse) the ECR repository for backend images:
+   ```bash
+   aws ecr create-repository \
+     --repository-name moabit-backend \
+     --image-scanning-configuration scanOnPush=true \
+     --region eu-central-1
+   ```
+2. Build and push an initial image so App Runner has something to deploy:
+   ```bash
+   cd backend
+   docker build -t moabit-backend .
+   docker tag moabit-backend:latest 311288365091.dkr.ecr.eu-central-1.amazonaws.com/moabit-backend:latest
+   aws ecr get-login-password --region eu-central-1 \
+     | docker login --username AWS --password-stdin 311288365091.dkr.ecr.eu-central-1.amazonaws.com
+   docker push 311288365091.dkr.ecr.eu-central-1.amazonaws.com/moabit-backend:latest
+   ```
+3. Create the App Runner service in the AWS console: pick the ECR image above, set **Port** to `3000`, choose your instance size, and paste the contents of `env/out/production-apprunner.env` into **Environment variables**. Record the resulting service ARN for future deployments.
+
+#### 2.3 Automated deployments & environment updates
+Once the service exists, redeploy with a single command:
 
 ```bash
-cd backend
-pnpm install
-pnpm run build
-docker build -t moabit-backend .
+export AWS_PROFILE=moafinder
+export AWS_REGION=eu-central-1
+export ACCOUNT_ID=311288365091
+export SERVICE_ARN=arn:aws:apprunner:eu-central-1:311288365091:service/moafinder-apprunner/730d43995c2d4084a187c806e6ed55b7
 
-REPO_URI=913283587816.dkr.ecr.eu-central-1.amazonaws.com/moabit-backend
-aws ecr get-login-password --region eu-central-1 \
-  | docker login --username AWS --password-stdin ${REPO_URI%/*}
-docker tag moabit-backend:latest $REPO_URI:latest
-docker push $REPO_URI:latest
+cd backend
+./deploy_apprunner.sh --target production
 ```
 
-Create or update the App Runner service:
+The script will regenerate the env files (unless you pass `--skip-apply`), build and push the Docker image, merge `env/out/production-apprunner.env` into the App Runner runtime variables, toggle the health check from TCP → HTTP, update `PAYLOAD_PUBLIC_SERVER_URL`, and wait until the service returns to `RUNNING`.
 
-1. AWS console → **App Runner → Create service** (or **Deploy latest image** if it already exists).
-2. Select the container image you pushed to ECR and set **Port** to `3000`.
-3. Configure environment variables (App Runner console → **Edit configuration → Environment variables**):
+Use `--env-file` to point at another target (e.g. staging) or `--skip-apply` if you already ran `node scripts/apply-env.mjs` elsewhere. For environment-only changes you can run `backend/scripts/update-apprunner-env.sh --service-arn ... --env-file env/out/production-apprunner.env` to avoid rebuilding the image.
 
-   | Variable | Value |
-   |----------|-------|
-   | `DATABASE_URI` | MongoDB connection string |
-   | `PAYLOAD_SECRET` | Secret used for Payload auth cookies |
-   | `PORT` | `3000` |
-   | `HEALTHCHECK_WARMUP_MS` | `180000` (optional warm-up in ms for health checks) |
-   | `HEALTHCHECK_PING_TIMEOUT_MS` | `1500` (optional Mongo ping timeout) |
-   | `PAYLOAD_PUBLIC_SERVER_URL` | `https://<app-runner-domain>` |
-   | `CORS_ORIGINS` | `https://main.d1i5ilm5fqb0i9.amplifyapp.com` (add other origins separated by commas) |
-   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | SMTP credentials |
-   | `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME` | Sender shown in emails |
-   | `CONTACT_RECIPIENT_EMAILS` | Address that should receive contact form messages |
-   | `EVENT_APPROVAL_NOTIFICATION_EMAILS` | Distribution list for event approval notifications |
+App Runner stores runtime environment variables encrypted at rest. Anyone with permission to view or edit the service can read them, so keep IAM permissions tight and avoid committing real secrets to git.
 
-4. Deploy and note:
-   - **Default domain** (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`). Add it to Amplify and `env/targets/production.envset` under `[backend]`/`[frontend]`.
-   - **Outbound IP addresses** (Networking tab). Add each IP to MongoDB Atlas Network Access.
+Once the service is live, note the **Default domain** (e.g. `https://xxxxxx.eu-central-1.awsapprunner.com`) so you can update Amplify rewrites and keep it in `env/targets/production.envset`. Also copy the **Networking → Outbound traffic** IP addresses into MongoDB Atlas Network Access so App Runner can reach the database.
 
 #### App Runner health check configuration
 
@@ -272,24 +284,21 @@ failed deployments leave the service in the `CREATE_FAILED` state.
 
 ### 3. Verify routing between frontend and backend
 1. Update the Amplify rewrite rule to use the App Runner URL and redeploy if necessary.
-2. Visit <https://main.d1i5ilm5fqb0i9.amplifyapp.com/> and open the browser Network tab.
+2. Visit <https://main.dgfhrurhtm4pa.amplifyapp.com/> and open the browser Network tab.
 3. Trigger API calls (e.g. load the events list or submit the contact form). Responses should come from the App Runner domain and set cookies successfully.
 4. Check the App Runner logs for any backend errors or missing environment variables.
 
 ### 4. Future deployments
 - **Frontend:** push to the connected Git branch; Amplify will rebuild automatically.
-- **Backend:** build and push a new Docker image, then redeploy App Runner. The sequence can be automated, but the manual commands are:
-
+- **Backend:** rerun the deployment helper (after exporting the AWS variables):
   ```bash
+  export AWS_PROFILE=moafinder
+  export AWS_REGION=eu-central-1
+  export ACCOUNT_ID=311288365091
+  export SERVICE_ARN=arn:aws:apprunner:eu-central-1:311288365091:service/moafinder-apprunner/730d43995c2d4084a187c806e6ed55b7
+
   cd backend
-  pnpm install
-  pnpm run build
-  docker build -t moabit-backend .
-  docker tag moabit-backend:latest $REPO_URI:latest
-  docker push $REPO_URI:latest
-  aws apprunner update-service \
-    --service-arn <service-arn> \
-    --source-configuration ImageRepository="{ImageIdentifier='$REPO_URI:latest',ImageRepositoryType='ECR'}"
+  ./deploy_apprunner.sh --target production
   ```
 
-Keep your `.env` file aligned with the environment variables configured in AWS to mirror production locally.
+Regenerate the env files (`node scripts/apply-env.mjs production`) whenever you rotate credentials so the service and your local setup stay in sync.

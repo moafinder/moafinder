@@ -16,6 +16,25 @@ PAYLOAD_SECRET="replace-with-production-secret"
 PAYLOAD_PUBLIC_SERVER_URL=https://your-app.apprunner.aws
 CORS_ORIGINS=https://main.your-amplify-domain.com
 
+# Outgoing email (Gmail SMTP). Use a Google Workspace account with 2‑Step Verification
+# and an App Password. For Gmail: host=smtp.gmail.com, port=587 (STARTTLS).
+# Set SMTP_ENABLE=true so Payload uses real SMTP (not JSON transport).
+SMTP_ENABLE=true
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@your-domain.com
+SMTP_PASS=your-16-char-gmail-app-password
+
+# From identity (both are supported in code paths; set both for clarity)
+EMAIL_FROM=your-email@your-domain.com
+EMAIL_FROM_NAME="MoaFinder"
+SMTP_FROM_EMAIL=your-email@your-domain.com
+SMTP_FROM_NAME="MoaFinder"
+
+# App-specific recipients
+CONTACT_RECIPIENT_EMAILS=info@your-domain.com
+EVENT_APPROVAL_NOTIFICATION_EMAILS=team@your-domain.com
+
 [frontend]
 VITE_API_BASE_URL=https://your-app.apprunner.aws/api
 

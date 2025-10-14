@@ -5,10 +5,13 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm ci
+            - corepack enable
+            # Optional: pin pnpm major; adjust if you standardize elsewhere
+            - corepack prepare pnpm@10 --activate || pnpm -v
+            - pnpm install --frozen-lockfile
         build:
           commands:
-            - npm run build
+            - pnpm run build
       artifacts:
         baseDirectory: dist
         files:
@@ -16,6 +19,5 @@ applications:
       cache:
         paths:
           - node_modules/**/*
-      environment:
-        variables:
-          VITE_API_BASE_URL: https://trcfif3bvg.eu-central-1.awsapprunner.com
+      # Define VITE_API_BASE_URL in the Amplify Console env vars,
+      # or rely on /api rewrites if you prefer relative API calls.
