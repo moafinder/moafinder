@@ -302,3 +302,14 @@ failed deployments leave the service in the `CREATE_FAILED` state.
   ```
 
 Regenerate the env files (`node scripts/apply-env.mjs production`) whenever you rotate credentials so the service and your local setup stay in sync.
+
+### 5. Admin tasks (promote/reset users)
+- Change a user’s role (and optionally reset the password):
+  ```bash
+  # Args: <email> [role] [new-password]
+  export DATABASE_URI="<mongodb-uri>"
+  export PAYLOAD_SECRET="<payload-secret>"
+  pnpm --dir backend exec payload run scripts/promote-user.mjs -- \
+    lukasz.osipiak@gmail.com admin "NewSecurePassword123!"
+  ```
+  The helper strips the literal `--`, so the actual arguments are `<email> [role] [password]`. When you supply the third argument the helper resets the password and sets `passwordConfirm` to match. The script runs with `overrideAccess: true`, so it succeeds even if no admin session is available.
