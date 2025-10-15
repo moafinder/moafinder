@@ -32,7 +32,7 @@ const Events: CollectionConfig = {
       }
       return true
     },
-    create: ({ req }: { req: PayloadRequest }) => !!req.user,
+    create: ({ req }: { req: PayloadRequest }) => !!(req.user && (req.user as any).emailVerified),
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false

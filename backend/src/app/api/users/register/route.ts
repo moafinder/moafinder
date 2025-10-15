@@ -1,6 +1,8 @@
 import configPromise from '@payload-config'
+import crypto from 'crypto'
 import { getPayload } from 'payload'
 import { ENFORCED_DEFAULT_ROLE } from '@/collections/Users'
+import { sendEmail } from '@/lib/email'
 
 const ALLOWED_METHODS = 'POST,OPTIONS'
 const DEFAULT_ALLOWED_HEADERS = 'Content-Type'
@@ -119,8 +121,19 @@ function parseBody(value: unknown): ParseResult {
   const passwordValue = typeof password === 'string' ? password : ''
   if (!passwordValue) {
     errors.push({ field: 'password', message: 'Password is required' })
-  } else if (passwordValue.length < 8) {
-    errors.push({ field: 'password', message: 'Password must be at least 8 characters long' })
+  } else if (passwordValue.length < 12) {
+    errors.push({ field: 'password', message: 'Password must be at least 12 characters long' })
+  } else {
+    const hasUpper = /[A-Z]/.test(passwordValue)
+    const hasLower = /[a-z]/.test(passwordValue)
+    const hasNumber = /[0-9]/.test(passwordValue)
+    const hasSpecial = /[^A-Za-z0-9]/.test(passwordValue)
+    if (!(hasUpper && hasLower && hasNumber && hasSpecial)) {
+      errors.push({
+        field: 'password',
+        message: 'Password must include upper, lower, number, and special character',
+      })
+    }
   }
 
   if (errors.length > 0) {
@@ -212,6 +225,47 @@ export async function POST(request: Request) {
       })
     } catch (error) {
       payload.logger.error({ msg: 'Failed to create organization for new user', error, userId: createdUser.id })
+    }
+
+    // Generate email verification token, store hashed, and send verification email
+    try {
+      const rawToken = crypto.randomBytes(32).toString('hex')
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() // 24h
+
+      await payload.update({
+        collection: 'users',
+        id: createdUser.id as string,
+        data: {
+          emailVerified: false,
+          emailVerification: { tokenHash, expiresAt },
+        },
+        overrideAccess: true,
+      })
+
+      const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
+      const verifyUrl = `${baseUrl}/api/users/verify?token=${encodeURIComponent(rawToken)}`
+
+      const lines = [
+        'Willkommen bei MoaFinder! Bitte bestätigen Sie Ihre E-Mail-Adresse,',
+        'damit Sie Veranstaltungen einstellen können.',
+        '',
+        `Bestätigungslink: ${verifyUrl}`,
+        '',
+        'Dieser Link ist 24 Stunden gültig.',
+      ]
+
+      const emailResult = await sendEmail({
+        to: parsed.data.email,
+        subject: 'Bitte bestätigen Sie Ihre E-Mail-Adresse',
+        text: lines.join('\n'),
+      })
+
+      if (!emailResult.success) {
+        payload.logger.warn({ msg: 'Verification email failed to send', userId: createdUser.id, error: emailResult.error })
+      }
+    } catch (error) {
+      payload.logger.error({ msg: 'Failed to issue verification token/email', error, userId: createdUser.id })
     }
   }
 

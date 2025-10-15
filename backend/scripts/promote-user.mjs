@@ -15,6 +15,7 @@ const promote = async () => {
   const app = await payload.init({ config })
 
   const data = { role }
+  console.log(`Updating user ${email} to role '${role}'${newPassword ? ' with password reset' : ''}...`)
   if (newPassword) {
     data.password = newPassword
     data.passwordConfirm = newPassword

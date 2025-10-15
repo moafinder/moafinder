@@ -1,5 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
+const isStrongPassword = (value: unknown): value is string => {
+  if (typeof value !== 'string') return false
+  if (value.length < 12) return false
+  const hasUpper = /[A-Z]/.test(value)
+  const hasLower = /[a-z]/.test(value)
+  const hasNumber = /[0-9]/.test(value)
+  const hasSpecial = /[^A-Za-z0-9]/.test(value)
+  return hasUpper && hasLower && hasNumber && hasSpecial
+}
+
 export const ENFORCED_DEFAULT_ROLE = 'organizer'
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -19,26 +29,58 @@ export const Users: CollectionConfig = {
     },
   },
   hooks: {
-    beforeChange: [({ data, req, operation }) => {
-      if (!data) return data
+    beforeChange: [
+      ({ data, req, operation }) => {
+        if (!data) return data
 
-      if (operation === 'create') {
-        // Only admins may choose a custom role; everyone else is forced to organizer.
-        if (req.user?.role === 'admin') {
-          if (!data.role) {
+        if (operation === 'create') {
+          // Only admins may choose a custom role; everyone else is forced to organizer.
+          if (req.user?.role === 'admin') {
+            if (!data.role) {
+              data.role = ENFORCED_DEFAULT_ROLE
+            }
+          } else {
             data.role = ENFORCED_DEFAULT_ROLE
           }
-        } else {
-          data.role = ENFORCED_DEFAULT_ROLE
+        } else if (operation === 'update' && req.user?.role !== 'admin') {
+          delete data.role
         }
-      } else if (operation === 'update' && req.user?.role !== 'admin') {
-        delete data.role
-      }
 
-      return data
-    }],
+        // Enforce strong password if present (create or update)
+        if (data.password && !isStrongPassword(data.password)) {
+          throw new Error(
+            'Password must be at least 12 characters and include upper, lower, number, and special character.',
+          )
+        }
+
+        return data
+      },
+    ],
   },
   fields: [
+    {
+      name: 'emailVerified',
+      label: 'Email Verified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'emailVerification',
+      label: 'Email Verification',
+      type: 'group',
+      admin: { readOnly: true },
+      fields: [
+        {
+          name: 'tokenHash',
+          type: 'text',
+        },
+        {
+          name: 'expiresAt',
+          type: 'date',
+        },
+      ],
+    },
     {
       name: 'name',
       label: 'Name',
