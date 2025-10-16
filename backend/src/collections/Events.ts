@@ -32,14 +32,33 @@ const Events: CollectionConfig = {
       }
       return true
     },
-    create: ({ req }: { req: PayloadRequest }) => {
+    create: async ({ req }: { req: PayloadRequest }) => {
       const user = req.user as any
       if (!user) return false
-      // Allow in non-production when explicitly enabled for local testing
-      if (process.env.ALLOW_UNVERIFIED === 'true' && process.env.NODE_ENV !== 'production') {
+      // Allow creation of drafts regardless of organization approval
+      const requestedStatus = (req?.body as any)?.status
+      if (requestedStatus === 'draft') {
         return true
       }
-      return !!user.emailVerified
+      // Local dev override: allow unverified only when explicitly enabled (but still require org approved to post?)
+      const emailOk =
+        (process.env.ALLOW_UNVERIFIED === 'true' && process.env.NODE_ENV !== 'production') || !!user.emailVerified
+
+      if (!emailOk) return false
+      if (user.disabled === true) return false
+
+      try {
+        // Require the organizer organization to be approved before posting
+        const result = await req.payload.find({
+          collection: 'organizations',
+          limit: 1,
+          where: { owner: { equals: user.id }, approved: { equals: true } } as any,
+        })
+        return (result?.totalDocs ?? 0) > 0
+      } catch (error) {
+        // If DB not reachable and healthcheck allows tolerance, deny safely
+        return false
+      }
     },
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req

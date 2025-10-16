@@ -34,8 +34,13 @@ const RegisterPage = () => {
       setError('Bitte füllen Sie alle Pflichtfelder aus.');
       return;
     }
-    if (form.password.length < 8) {
-      setError('Das Passwort muss mindestens 8 Zeichen lang sein.');
+    const pw = form.password;
+    if (pw.length < 12) {
+      setError('Das Passwort muss mindestens 12 Zeichen lang sein.');
+      return;
+    }
+    if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+      setError('Passwort benötigt Groß-, Kleinbuchstaben, Zahl und Sonderzeichen.');
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -72,7 +77,7 @@ const RegisterPage = () => {
         throw new Error(message);
       }
 
-      navigate('/login', { replace: true });
+      navigate('/login', { replace: true, state: { message: 'Registrierung erfolgreich. Bitte bestätige deine E-Mail. Ein Admin schaltet dich anschließend frei.' } });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Die Registrierung ist fehlgeschlagen.';
       setError(message);
