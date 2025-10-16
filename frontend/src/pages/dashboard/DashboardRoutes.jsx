@@ -19,6 +19,7 @@ import AdminOverviewPage from './AdminOverviewPage';
 import AdminUsersPage from './AdminUsersPage';
 import AdminSettingsPage from './AdminSettingsPage';
 import { useAuth } from '../../context/AuthContext';
+import ChangePasswordPage from './ChangePasswordPage';
 
 const DashboardRoutes = () => {
   return (
@@ -27,6 +28,7 @@ const DashboardRoutes = () => {
         <Route index element={<Navigate to="/dashboard/events" replace />} />
         <Route path="organization" element={<OrganizationProfilePage />} />
         <Route path="events" element={<OrganizerEventsPage />} />
+        <Route path="password" element={<ChangePasswordPage />} />
         <Route path="events/new" element={<OrganizerEventCreatePage />} />
         <Route path="events/:id/edit" element={<OrganizerEventEditPage />} />
         <Route path="media" element={<OrganizerMediaPage />} />

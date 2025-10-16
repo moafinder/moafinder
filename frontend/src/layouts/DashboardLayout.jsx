@@ -1,4 +1,5 @@
 import React from 'react';
+import { apiBaseUrl } from '../api/baseUrl';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,6 +16,7 @@ const organizerSidebar = [
   { label: 'Event-Bilder', to: '/dashboard/media' },
   { label: 'Regelkatalog', to: '/dashboard/guidelines' },
   { label: 'Archiv', to: '/dashboard/archive' },
+  { label: 'Passwort ändern', to: '/dashboard/password' },
 ];
 
 const editorSidebar = [
@@ -24,12 +26,14 @@ const editorSidebar = [
   { label: 'Event-Bilder', to: '/dashboard/editor/media' },
   { label: 'Regelkatalog', to: '/dashboard/editor/guidelines' },
   { label: 'Archiv', to: '/dashboard/editor/archive' },
+  { label: 'Passwort ändern', to: '/dashboard/password' },
 ];
 
 const adminSidebar = [
   { label: 'Systemübersicht', to: '/dashboard/admin' },
   { label: 'Benutzerverwaltung', to: '/dashboard/admin/users' },
   { label: 'Einstellungen', to: '/dashboard/admin/settings' },
+  { label: 'Passwort ändern', to: '/dashboard/password' },
 ];
 
 const DashboardLayout = ({ children }) => {
@@ -71,6 +75,17 @@ const DashboardLayout = ({ children }) => {
             </nav>
           </div>
           <div className="flex items-center space-x-4">
+            {user?.role === 'admin' && (
+              <a
+                href={`${(apiBaseUrl || '').replace(/\/?api$/, '') || ''}/admin`}
+                target="_blank"
+                rel="noreferrer"
+                className="hidden rounded-md border border-gray-700 px-3 py-1 text-sm font-semibold text-gray-200 transition hover:bg-gray-800 md:inline"
+                title="Payload Admin öffnen"
+              >
+                Payload Admin
+              </a>
+            )}
             {user && (
               <span className="hidden text-sm text-gray-300 md:inline">{user.email}</span>
             )}

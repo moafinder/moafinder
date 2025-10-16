@@ -51,6 +51,18 @@ const AdminUsersPage = () => {
     }
   };
 
+  const handleStatusChange = async (userId, disabled) => {
+    try {
+      setProcessingId(userId);
+      await updateUser(userId, { disabled });
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, disabled } : user)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Statusänderung fehlgeschlagen');
+    } finally {
+      setProcessingId('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header>
@@ -82,6 +94,7 @@ const AdminUsersPage = () => {
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">E-Mail</th>
                 <th className="px-4 py-3 text-left">Rolle</th>
+                <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Erstellt</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -92,6 +105,19 @@ const AdminUsersPage = () => {
                   <td className="px-4 py-3 font-semibold text-gray-900">{user.name ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{user.email}</td>
                   <td className="px-4 py-3 text-gray-600">{user.role}</td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={user.disabled ? 'disabled' : 'active'}
+                      onChange={(e) => handleStatusChange(user.id, e.target.value === 'disabled')}
+                      disabled={processingId === user.id}
+                      className={`rounded-md border px-2 py-1 text-sm focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] ${
+                        user.disabled ? 'border-red-300 text-red-700' : 'border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <option value="active">Aktiv</option>
+                      <option value="disabled">Deaktiviert</option>
+                    </select>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{new Date(user.createdAt).toLocaleDateString('de-DE')}</td>
                   <td className="px-4 py-3 text-right">
                     <select

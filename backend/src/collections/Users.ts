@@ -17,7 +17,12 @@ export const Users: CollectionConfig = {
   slug: 'users',
   access: {
     create: () => true,
-    update: ({ req }) => req.user?.role === 'admin',
+    update: ({ req }) => {
+      if (!req.user) return false
+      if (req.user.role === 'admin') return true
+      // Allow users to update their own profile (e.g., password)
+      return { id: { equals: (req.user as any).id } } as any
+    },
   },
   admin: {
     useAsTitle: 'email',
@@ -58,6 +63,16 @@ export const Users: CollectionConfig = {
     ],
   },
   fields: [
+    {
+      name: 'disabled',
+      label: 'Zugang deaktiviert',
+      type: 'checkbox',
+      defaultValue: false,
+      access: {
+        // Only admin may disable/enable accounts
+        update: ({ req }) => req.user?.role === 'admin',
+      },
+    },
     {
       name: 'emailVerified',
       label: 'Email Verified',
