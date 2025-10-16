@@ -32,7 +32,15 @@ const Events: CollectionConfig = {
       }
       return true
     },
-    create: ({ req }: { req: PayloadRequest }) => !!(req.user && (req.user as any).emailVerified),
+    create: ({ req }: { req: PayloadRequest }) => {
+      const user = req.user as any
+      if (!user) return false
+      // Allow in non-production when explicitly enabled for local testing
+      if (process.env.ALLOW_UNVERIFIED === 'true' && process.env.NODE_ENV !== 'production') {
+        return true
+      }
+      return !!user.emailVerified
+    },
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false
@@ -114,12 +122,55 @@ const Events: CollectionConfig = {
         {
           name: 'repeatUntil',
           type: 'date',
-          label: 'Wiederholen bis',
+          label: 'Letzte Durchführung (Datum)',
           admin: {
             date: {
               pickerAppearance: 'dayOnly',
             },
           },
+        },
+        // Monthly configuration (optional; used when eventType === 'monatlich')
+        {
+          name: 'monthlyMode',
+          type: 'select',
+          label: 'Monatlich: Modus',
+          options: [
+            { label: 'Am Tag des Monats (z. B. 1.)', value: 'dayOfMonth' },
+            { label: 'Am Wochentag im Monat (z. B. 1. Dienstag)', value: 'nthWeekday' },
+          ],
+        },
+        {
+          name: 'monthlyDayOfMonth',
+          type: 'number',
+          label: 'Monatlich: Tag des Monats (1–31)',
+          min: 1,
+          max: 31,
+        },
+        {
+          name: 'monthlyWeekIndex',
+          type: 'select',
+          label: 'Monatlich: Welche Woche',
+          options: [
+            { label: 'Erste', value: 'first' },
+            { label: 'Zweite', value: 'second' },
+            { label: 'Dritte', value: 'third' },
+            { label: 'Vierte', value: 'fourth' },
+            { label: 'Letzte', value: 'last' },
+          ],
+        },
+        {
+          name: 'monthlyWeekday',
+          type: 'select',
+          label: 'Monatlich: Wochentag',
+          options: [
+            { label: 'Montag', value: 'mon' },
+            { label: 'Dienstag', value: 'tue' },
+            { label: 'Mittwoch', value: 'wed' },
+            { label: 'Donnerstag', value: 'thu' },
+            { label: 'Freitag', value: 'fri' },
+            { label: 'Samstag', value: 'sat' },
+            { label: 'Sonntag', value: 'sun' },
+          ],
         },
       ],
     },
@@ -234,7 +285,7 @@ const Events: CollectionConfig = {
     beforeValidate: [
       ({ data }: { data?: any }) => {
         if (!data?.expiryDate) {
-          const baseDate = data?.endDate || data?.startDate
+          const baseDate = data?.recurrence?.repeatUntil || data?.endDate || data?.startDate
           if (baseDate) {
             data.expiryDate = baseDate
           }

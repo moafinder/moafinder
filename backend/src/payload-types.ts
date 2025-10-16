@@ -129,6 +129,11 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  emailVerified?: boolean | null;
+  emailVerification?: {
+    tokenHash?: string | null;
+    expiresAt?: string | null;
+  };
   name?: string | null;
   role: 'admin' | 'editor' | 'organizer';
   updatedAt: string;
@@ -233,6 +238,10 @@ export interface Event {
   recurrence?: {
     daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[] | null;
     repeatUntil?: string | null;
+    monthlyMode?: ('dayOfMonth' | 'nthWeekday') | null;
+    monthlyDayOfMonth?: number | null;
+    monthlyWeekIndex?: ('first' | 'second' | 'third' | 'fourth' | 'last') | null;
+    monthlyWeekday?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun') | null;
   };
   time?: {
     from?: string | null;
@@ -402,6 +411,13 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  emailVerified?: T;
+  emailVerification?:
+    | T
+    | {
+        tokenHash?: T;
+        expiresAt?: T;
+      };
   name?: T;
   role?: T;
   updatedAt?: T;
@@ -461,6 +477,10 @@ export interface EventsSelect<T extends boolean = true> {
     | {
         daysOfWeek?: T;
         repeatUntil?: T;
+        monthlyMode?: T;
+        monthlyDayOfMonth?: T;
+        monthlyWeekIndex?: T;
+        monthlyWeekday?: T;
       };
   time?:
     | T

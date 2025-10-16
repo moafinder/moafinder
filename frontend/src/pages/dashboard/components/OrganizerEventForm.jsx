@@ -28,12 +28,19 @@ const defaultForm = {
   subtitle: '',
   description: '',
   eventType: 'einmalig',
-  startDate: '',
-  endDate: '',
-  timeFrom: '',
-  timeTo: '',
-  recurrenceDays: [],
-  recurrenceUntil: '',
+  // Simplified time inputs
+  firstDate: '', // YYYY-MM-DD
+  firstTime: '', // HH:MM
+  durationHours: '', // string to bind input, parse to int
+  durationMinutes: '', // string to bind input, parse to int
+  // Recurrence
+  recurrenceDays: [], // for weekly only
+  lastDate: '', // YYYY-MM-DD (last occurrence)
+  // Monthly options
+  monthlyMode: 'dayOfMonth', // 'dayOfMonth' | 'nthWeekday'
+  monthlyDayOfMonth: '', // 1-31
+  monthlyWeekIndex: 'first', // first|second|third|fourth|last
+  monthlyWeekday: 'mon',
   location: '',
   tags: [],
   image: '',
@@ -98,18 +105,41 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       subtitle: initialEvent.subtitle ?? '',
       description: initialEvent.description ?? '',
       eventType: initialEvent.eventType ?? 'einmalig',
-      startDate: isoToDatetimeLocal(initialEvent.startDate),
-      endDate: isoToDatetimeLocal(initialEvent.endDate),
-      timeFrom:
+      // First occurrence date/time
+      firstDate: initialEvent.startDate ? new Date(initialEvent.startDate).toISOString().slice(0, 10) : '',
+      firstTime:
         initialEvent.time?.from ??
         (initialEvent.startDate ? new Date(initialEvent.startDate).toISOString().slice(11, 16) : ''),
-      timeTo:
-        initialEvent.time?.to ??
-        (initialEvent.endDate ? new Date(initialEvent.endDate).toISOString().slice(11, 16) : ''),
+      // Duration derived from end-start or time.to-time.from when available
+      ...(function deriveDuration() {
+        try {
+          const start = initialEvent.startDate ? new Date(initialEvent.startDate) : null;
+          const end = initialEvent.endDate ? new Date(initialEvent.endDate) : null;
+          let minutes = 0;
+          if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+            minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+          } else if (initialEvent.time?.from && initialEvent.time?.to) {
+            const [fh, fm] = String(initialEvent.time.from).split(':').map((v) => parseInt(v, 10) || 0);
+            const [th, tm] = String(initialEvent.time.to).split(':').map((v) => parseInt(v, 10) || 0);
+            minutes = Math.max(0, th * 60 + tm - (fh * 60 + fm));
+          }
+          const hours = minutes ? Math.floor(minutes / 60) : '';
+          const mins = minutes ? minutes % 60 : '';
+          return { durationHours: hours === '' ? '' : String(hours), durationMinutes: mins === '' ? '' : String(mins) };
+        } catch {
+          return { durationHours: '', durationMinutes: '' };
+        }
+      })(),
+      // Recurrence
       recurrenceDays: initialEvent.recurrence?.daysOfWeek ?? [],
-      recurrenceUntil: initialEvent.recurrence?.repeatUntil
-        ? initialEvent.recurrence.repeatUntil.slice(0, 10)
-        : '',
+      lastDate: initialEvent.recurrence?.repeatUntil ? initialEvent.recurrence.repeatUntil.slice(0, 10) : '',
+      // Monthly details (best-effort defaults)
+      monthlyMode: initialEvent.recurrence?.monthlyMode ?? 'dayOfMonth',
+      monthlyDayOfMonth:
+        initialEvent.recurrence?.monthlyDayOfMonth ??
+        (initialEvent.startDate ? String(new Date(initialEvent.startDate).getDate()) : ''),
+      monthlyWeekIndex: initialEvent.recurrence?.monthlyWeekIndex ?? 'first',
+      monthlyWeekday: initialEvent.recurrence?.monthlyWeekday ?? 'mon',
       location: initialEvent.location ?? '',
       tags: Array.isArray(initialEvent.tags)
         ? initialEvent.tags.map((tag) => (typeof tag === 'object' ? tag.id : tag))
@@ -194,26 +224,85 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
     setError('');
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      const startDateISO = datetimeLocalToIso(form.startDate);
-      const endDateISO = datetimeLocalToIso(form.endDate);
-      const normalizedFrom =
-        form.timeFrom?.trim() || (startDateISO ? new Date(startDateISO).toISOString().slice(11, 16) : '');
-      const normalizedTo =
-        form.timeTo?.trim() || (endDateISO ? new Date(endDateISO).toISOString().slice(11, 16) : '');
-
+      // Validate first occurrence
+      if (!form.firstDate) {
+        throw new Error('Bitte gib das Datum der ersten Durchführung an.');
+      }
+      if (!form.firstTime) {
+        throw new Error('Bitte gib die Uhrzeit der ersten Durchführung an.');
+      }
+      const startDateISO = (() => {
+        try {
+          const combined = `${form.firstDate}T${form.firstTime}`;
+          const d = new Date(combined);
+          if (Number.isNaN(d.getTime())) return null;
+          return d.toISOString();
+        } catch {
+          return null;
+        }
+      })();
       if (!startDateISO) {
-        throw new Error('Bitte gib ein Startdatum mit Uhrzeit an.');
+        throw new Error('Ungültiges Startdatum/Uhrzeit.');
       }
 
+      // Validate duration
+      const dh = parseInt(form.durationHours || '0', 10) || 0;
+      const dm = parseInt(form.durationMinutes || '0', 10) || 0;
+      const durationMinutes = dh * 60 + dm;
+      if (durationMinutes <= 0) {
+        throw new Error('Bitte gib eine Dauer größer 0 an.');
+      }
+
+      // Compute end date/time from duration
+      const endDateISO = new Date(new Date(startDateISO).getTime() + durationMinutes * 60000).toISOString();
+      const normalizedFrom = form.firstTime;
+      const normalizedTo = new Date(endDateISO).toISOString().slice(11, 16);
+
+      // Recurrence validation
       if (form.eventType !== 'einmalig') {
-        if (!form.recurrenceDays.length) {
-          throw new Error('Bitte wähle mindestens einen Wochentag für die Wiederholung aus.');
+        if (!form.lastDate) {
+          throw new Error('Bitte gib das Datum der letzten Durchführung an.');
         }
-        if (form.recurrenceUntil && form.recurrenceUntil < startDateISO.slice(0, 10)) {
-          throw new Error('Das Wiederholungsende muss nach dem Startdatum liegen.');
+        if (form.lastDate < form.firstDate) {
+          throw new Error('Das Enddatum der Serie muss nach dem ersten Datum liegen.');
+        }
+        if (form.eventType === 'wöchentlich' && (!form.recurrenceDays || form.recurrenceDays.length === 0)) {
+          throw new Error('Bitte wähle mindestens einen Wochentag für wöchentliche Wiederholung aus.');
+        }
+        if (form.eventType === 'monatlich') {
+          if (form.monthlyMode === 'dayOfMonth') {
+            const day = parseInt(form.monthlyDayOfMonth || '0', 10);
+            if (!day || day < 1 || day > 31) {
+              throw new Error('Bitte gib einen gültigen Tag des Monats (1–31) an.');
+            }
+          } else if (form.monthlyMode === 'nthWeekday') {
+            if (!form.monthlyWeekIndex || !form.monthlyWeekday) {
+              throw new Error('Bitte wähle Woche und Wochentag für die monatliche Wiederholung.');
+            }
+          }
         }
       }
+
+      const recurrencePayload = (() => {
+        if (form.eventType === 'einmalig') return null;
+        const base = { repeatUntil: form.lastDate || null };
+        if (form.eventType === 'wöchentlich') {
+          return { ...base, daysOfWeek: form.recurrenceDays };
+        }
+        if (form.eventType === 'monatlich') {
+          const extra =
+            form.monthlyMode === 'dayOfMonth'
+              ? { monthlyMode: 'dayOfMonth', monthlyDayOfMonth: parseInt(form.monthlyDayOfMonth, 10) }
+              : {
+                  monthlyMode: 'nthWeekday',
+                  monthlyWeekIndex: form.monthlyWeekIndex,
+                  monthlyWeekday: form.monthlyWeekday,
+                };
+          return { ...base, ...extra };
+        }
+        // täglich / jährlich need no extra fields beyond end
+        return base;
+      })();
 
       const payload = {
         title: form.title,
@@ -222,13 +311,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         eventType: form.eventType,
         startDate: startDateISO,
         endDate: endDateISO,
-        recurrence:
-          form.eventType === 'einmalig'
-            ? null
-            : {
-                daysOfWeek: form.recurrenceDays,
-                repeatUntil: form.recurrenceUntil || null,
-              },
+        recurrence: recurrencePayload,
         time: {
           from: normalizedFrom || null,
           to: normalizedTo || null,
@@ -300,56 +383,113 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         />
       </section>
 
-      <section className="rounded-xl bg-white p-6 shadow-sm">
+  <section className="rounded-xl bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Termin & Wiederholung</h2>
         <p className="mt-2 text-sm text-gray-600">
-          Lege Beginn und Ende des Angebots fest. Die Uhrzeiten werden für die Übersicht und Filter verwendet.
-          Bei wiederkehrenden Terminen gilt das Startdatum als erste Durchführung.
+          Gib die erste Durchführung, Uhrzeit und Dauer an. Für wiederkehrende Angebote wähle optional das Muster und das letzte Datum der Serie.
         </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <DatetimeField
-            label="Beginn (Datum & Uhrzeit)"
-            required
-            value={form.startDate}
-            onChange={(value) => handleChange('startDate', value)}
-          />
-          <DatetimeField
-            label="Ende (Datum & Uhrzeit)"
-            value={form.endDate}
-            onChange={(value) => handleChange('endDate', value)}
+          <DateField
+            label="Datum der ersten Durchführung"
+            value={form.firstDate}
+            onChange={(value) => handleChange('firstDate', value)}
           />
           <TimeField
-            label="Uhrzeit (Beginn)"
-            helper="Optional, wird ansonsten aus dem Beginn-Datum übernommen."
-            value={form.timeFrom}
-            onChange={(value) => handleChange('timeFrom', value)}
+            label="Uhrzeit der ersten Durchführung"
+            value={form.firstTime}
+            onChange={(value) => handleChange('firstTime', value)}
           />
-          <TimeField
-            label="Uhrzeit (Ende)"
-            helper="Optional, wird ansonsten aus dem Ende-Datum übernommen."
-            value={form.timeTo}
-            onChange={(value) => handleChange('timeTo', value)}
-          />
+          <div className="flex flex-col text-sm font-medium text-gray-700">
+            Dauer
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                min="0"
+                placeholder="Stunden"
+                value={form.durationHours}
+                onChange={(e) => handleChange('durationHours', e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Minuten"
+                value={form.durationMinutes}
+                onChange={(e) => handleChange('durationMinutes', e.target.value)}
+                className="rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
+              />
+            </div>
+            <span className="mt-1 text-xs text-gray-500">Zeit zwischen Beginn und Ende.</span>
+          </div>
+          {!recurrenceDisabled && (
+            <DateField
+              label="Datum der letzten Durchführung"
+              value={form.lastDate}
+              onChange={(value) => handleChange('lastDate', value)}
+              min={form.firstDate || undefined}
+            />
+          )}
         </div>
 
         {!recurrenceDisabled && (
           <div className="mt-6 space-y-4 rounded-lg border border-gray-200 p-4">
             <p className="text-sm font-semibold text-gray-700">Wiederholung</p>
-            <p className="text-xs text-gray-500">
-              Wähle aus, an welchen Wochentagen das Angebot stattfindet. Das Wiederholungsende begrenzt die Serie.
-            </p>
-            <MultiSelectField
-              label="Wochentage"
-              value={form.recurrenceDays}
-              onChange={(values) => handleMultiSelectChange('recurrenceDays', values)}
-              options={WEEKDAY_OPTIONS}
-            />
-            <DateField
-              label="Wiederholen bis"
-              value={form.recurrenceUntil}
-              onChange={(value) => handleChange('recurrenceUntil', value)}
-              min={form.startDate ? form.startDate.slice(0, 10) : undefined}
-            />
+            {form.eventType === 'wöchentlich' && (
+              <>
+                <p className="text-xs text-gray-500">Wähle die Wochentage für die Wiederholung.</p>
+                <MultiSelectField
+                  label="Wochentage"
+                  value={form.recurrenceDays}
+                  onChange={(values) => handleMultiSelectChange('recurrenceDays', values)}
+                  options={WEEKDAY_OPTIONS}
+                />
+              </>
+            )}
+            {form.eventType === 'monatlich' && (
+              <>
+                <p className="text-xs text-gray-500">Monatliche Wiederholung nach Datum oder Wochentag.</p>
+                <SelectField
+                  label="Wiederholungsmodus"
+                  value={form.monthlyMode}
+                  onChange={(value) => handleChange('monthlyMode', value)}
+                  options={[
+                    { label: 'Am Tag des Monats (z. B. 1.)', value: 'dayOfMonth' },
+                    { label: 'Am Wochentag im Monat (z. B. 1. Dienstag)', value: 'nthWeekday' },
+                  ]}
+                />
+                {form.monthlyMode === 'dayOfMonth' ? (
+                  <Field
+                    label="Tag des Monats"
+                    value={form.monthlyDayOfMonth}
+                    onChange={(value) => handleChange('monthlyDayOfMonth', value)}
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectField
+                      label="Welche Woche"
+                      value={form.monthlyWeekIndex}
+                      onChange={(value) => handleChange('monthlyWeekIndex', value)}
+                      options={[
+                        { label: 'Erste', value: 'first' },
+                        { label: 'Zweite', value: 'second' },
+                        { label: 'Dritte', value: 'third' },
+                        { label: 'Vierte', value: 'fourth' },
+                        { label: 'Letzte', value: 'last' },
+                      ]}
+                    />
+                    <SelectField
+                      label="Wochentag"
+                      value={form.monthlyWeekday}
+                      onChange={(value) => handleChange('monthlyWeekday', value)}
+                      options={WEEKDAY_OPTIONS}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            {(form.eventType === 'täglich' || form.eventType === 'jährlich') && (
+              <p className="text-xs text-gray-500">Für tägliche und jährliche Wiederholungen sind keine Wochentage nötig.</p>
+            )}
           </div>
         )}
       </section>
