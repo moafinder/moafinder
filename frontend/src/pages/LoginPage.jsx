@@ -60,6 +60,8 @@ const LoginPage = () => {
               <input
                 type="email"
                 id="email"
+                name="email"
+                autoComplete="username"
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CB92C] focus:border-transparent transition-all duration-300"
                 placeholder="email@veranstalterin.de"
                 value={email}
@@ -77,6 +79,8 @@ const LoginPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
+                  name="password"
+                  autoComplete="current-password"
                   className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7CB92C] focus:border-transparent transition-all duration-300 pr-12"
                   placeholder="**************"
                   value={password}
