@@ -268,7 +268,11 @@ runtime_env_vars = load_env_file(env_file_path)
 if port_env or app_port:
     runtime_env_vars.setdefault("PORT", port_env or app_port)
 
-runtime_env_vars["PAYLOAD_PUBLIC_SERVER_URL"] = public_url
+# Don't clobber an existing PAYLOAD_PUBLIC_SERVER_URL with a placeholder
+if public_url and public_url != "https://placeholder":
+    runtime_env_vars["PAYLOAD_PUBLIC_SERVER_URL"] = public_url
+else:
+    runtime_env_vars.setdefault("PAYLOAD_PUBLIC_SERVER_URL", public_url)
 runtime_env_vars.setdefault("HOSTNAME", hostname or "0.0.0.0")
 
 if cors_origins and not runtime_env_vars.get("CORS_ORIGINS"):

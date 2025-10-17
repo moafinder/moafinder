@@ -16,6 +16,7 @@ import { getClientConfig } from '@payloadcms/ui/utilities/getClientConfig'
 import { getPayload } from 'payload'
 import { getNextRequestI18n } from '@payloadcms/next/utilities'
 import AdminClientBridge from './AdminClientBridge'
+import { redirect } from 'next/navigation'
 import type { LanguageOptions } from 'payload'
 
 type Props = {
@@ -67,6 +68,11 @@ export default async function CustomRootLayout({ children, config: configPromise
   )
 
   const clientConfig = getClientConfig({ config: payloadConfig, i18n, importMap, user })
+
+  // If a user is authenticated but not an admin, prevent access to the Payload admin UI
+  if (user && user.role !== 'admin') {
+    redirect('/')
+  }
 
   return (
     <html

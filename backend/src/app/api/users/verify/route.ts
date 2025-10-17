@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         'emailVerification.expiresAt': { greater_than: now },
       } as any,
       limit: 1,
+      overrideAccess: true,
     })
 
     if (!found || found.totalDocs === 0) {
@@ -52,4 +53,3 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true })
 }
-

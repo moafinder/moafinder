@@ -16,6 +16,12 @@ const isProduction = process.env.NODE_ENV === 'production'
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
+    read: ({ req }) => {
+      // Only admins can list/read other users; everyone else may read only their own document
+      if (!req.user) return false
+      if (req.user.role === 'admin') return true
+      return { id: { equals: (req.user as any).id } } as any
+    },
     create: () => true,
     update: ({ req }) => {
       if (!req.user) return false
@@ -23,6 +29,7 @@ export const Users: CollectionConfig = {
       // Allow users to update their own profile (e.g., password)
       return { id: { equals: (req.user as any).id } } as any
     },
+    delete: ({ req }) => req.user?.role === 'admin',
   },
   admin: {
     useAsTitle: 'email',
