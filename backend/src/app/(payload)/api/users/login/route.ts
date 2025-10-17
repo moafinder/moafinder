@@ -1,67 +1,44 @@
-import configPromise from '@payload-config'
+import config from '@payload-config'
+import { REST_POST } from '@payloadcms/next/routes'
 import { getPayload } from 'payload'
 
+const defaultPOST = REST_POST(config)
+
+// Simple CORS helper (mirror register route behavior)
 const ALLOWED_METHODS = 'POST,OPTIONS'
 const DEFAULT_ALLOWED_HEADERS = 'Content-Type,Authorization,Payload-CSRF-Token'
 
 const configuredOrigins = new Set(
   (process.env.CORS_ORIGINS ?? '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((o) => o.trim())
     .filter(Boolean),
 )
-
-if (process.env.PAYLOAD_PUBLIC_SERVER_URL) {
-  configuredOrigins.add(process.env.PAYLOAD_PUBLIC_SERVER_URL)
-}
-
+if (process.env.PAYLOAD_PUBLIC_SERVER_URL) configuredOrigins.add(process.env.PAYLOAD_PUBLIC_SERVER_URL)
 configuredOrigins.add('http://localhost:3000')
 configuredOrigins.add('http://127.0.0.1:3000')
 
-function applyCorsHeaders(request: Request, headers: Headers, includePreflightHeaders = false) {
+function applyCorsHeaders(request: Request, headers: Headers, includePreflight = false) {
   const origin = request.headers.get('origin')
-
   if (!origin) {
-    if (includePreflightHeaders) {
+    if (includePreflight) {
       headers.set('Access-Control-Allow-Methods', ALLOWED_METHODS)
       headers.set('Access-Control-Allow-Headers', DEFAULT_ALLOWED_HEADERS)
       headers.set('Access-Control-Max-Age', '600')
     }
     return { allowed: true }
   }
-
   const allowed = configuredOrigins.size === 0 || configuredOrigins.has(origin)
-  if (!allowed) {
-    return { allowed: false }
-  }
-
+  if (!allowed) return { allowed: false }
   headers.set('Access-Control-Allow-Origin', origin)
   headers.set('Access-Control-Allow-Credentials', 'true')
   headers.append('Vary', 'Origin')
-
-  if (includePreflightHeaders) {
+  if (includePreflight) {
     headers.set('Access-Control-Allow-Methods', ALLOWED_METHODS)
-    headers.set(
-      'Access-Control-Allow-Headers',
-      request.headers.get('access-control-request-headers') ?? DEFAULT_ALLOWED_HEADERS,
-    )
+    headers.set('Access-Control-Allow-Headers', request.headers.get('access-control-request-headers') ?? DEFAULT_ALLOWED_HEADERS)
     headers.set('Access-Control-Max-Age', '600')
   }
-
   return { allowed: true }
-}
-
-function jsonResponse<T>(request: Request, body: T, init: ResponseInit = {}) {
-  const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
-  const { allowed } = applyCorsHeaders(request, headers)
-  if (!allowed) {
-    return new Response(JSON.stringify({ errors: [{ message: 'Origin not allowed' }] }), {
-      status: 403,
-      headers,
-    })
-  }
-  return new Response(JSON.stringify(body), { ...init, headers })
 }
 
 export async function OPTIONS(request: Request) {
@@ -70,47 +47,72 @@ export async function OPTIONS(request: Request) {
   return new Response(null, { status: allowed ? 204 : 403, headers })
 }
 
-export async function POST(request: Request) {
-  let body: any
+export async function POST(request: Request, context: unknown) {
+  // Minimal disabled-account check before delegating to Payload's built-in handler (which sets cookies correctly)
   try {
-    body = await request.json()
-  } catch {
-    return jsonResponse(request, { errors: [{ message: 'Invalid JSON body' }] }, { status: 400 })
-  }
-
-  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
-  const password = typeof body?.password === 'string' ? body.password : ''
-
-  if (!email || !password) {
-    return jsonResponse(request, { errors: [{ message: 'Email and password are required' }] }, { status: 400 })
-  }
-
-  const payload = await getPayload({ config: configPromise })
-
-  try {
-    // Check if user is disabled before attempting login
-    const found = await payload.find({
-      collection: 'users',
-      where: { email: { equals: email } } as any,
-      limit: 1,
-    })
-
-    const user = found?.docs?.[0]
-    if (user && (user as any).disabled) {
-      return jsonResponse(
-        request,
-        { errors: [{ message: 'Account is deactivated. Contact an administrator.' }] },
-        { status: 403 },
-      )
+    // IMPORTANT: read from a clone so we don't consume the original body
+    const r = request.clone()
+    const ct = (r.headers.get('content-type') || '').toLowerCase()
+    let email = ''
+    if (ct.includes('application/json')) {
+      const body = await r.json()
+      email = String(body?.email ?? body?._payload?.email ?? body?.payload?.email ?? body?.data?.email ?? '').trim().toLowerCase()
+    } else if (ct.includes('application/x-www-form-urlencoded')) {
+      const text = await r.text()
+      const params = new URLSearchParams(text)
+      email = (params.get('email') || '').trim().toLowerCase()
+      if (!email) {
+        const p = params.get('_payload') || params.get('payload') || params.get('data')
+        if (p) {
+          try {
+            const nested = JSON.parse(p)
+            email = String(nested?.email || '').trim().toLowerCase()
+          } catch {
+            /* noop */
+          }
+        }
+      }
+    } else {
+      const form = await r.formData().catch(() => null)
+      if (form) {
+        email = String(form.get('email') || form.get('username') || '').trim().toLowerCase()
+        if (!email) {
+          const raw = form.get('_payload') || form.get('payload') || form.get('data')
+          if (raw) {
+            try {
+              const text = typeof raw === 'string' ? raw : await (raw as Blob).text()
+              const nested = JSON.parse(text)
+              email = String(nested?.email || '').trim().toLowerCase()
+            } catch {
+              /* noop */
+            }
+          }
+        }
+      }
     }
 
-    const result = await payload.login({
-      collection: 'users',
-      data: { email, password },
-    })
-
-    return jsonResponse(request, { user: result.user, token: (result as any).token ?? null }, { status: 200 })
-  } catch (error) {
-    return jsonResponse(request, { errors: [{ message: 'Login failed' }] }, { status: 401 })
+    if (email) {
+      const payload = await getPayload({ config })
+      const found = await payload
+        .find({ collection: 'users', where: { email: { equals: email } } as any, limit: 1, overrideAccess: true })
+        .catch(() => null)
+      const user = (found?.docs?.[0] as any) || null
+      if (user?.disabled) {
+        const headers = new Headers({ 'Content-Type': 'application/json' })
+        applyCorsHeaders(request, headers)
+        return new Response(JSON.stringify({ errors: [{ message: 'Account is deactivated. Contact an administrator.' }] }), {
+          status: 403,
+          headers,
+        })
+      }
+    }
+  } catch {
+    /* noop */
   }
+
+  const resp = await defaultPOST(request, context as any)
+  // Ensure CORS headers are present on the response
+  const headers = new Headers(resp.headers)
+  applyCorsHeaders(request, headers)
+  return new Response(resp.body, { status: resp.status, headers })
 }

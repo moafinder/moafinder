@@ -198,6 +198,25 @@ The Amplify app is already connected to your repository and available at <https:
    | `</^[^.]+$/>` | `/index.html` | 200 (Rewrite) |
 
    Keep the `/api/<*>` row above the SPA fallback rule so API traffic reaches App Runner.
+
+   Alternatively, you can paste this JSON via **Import from JSON** in the Amplify UI (replace `<app-runner-domain>`):
+
+   ```json
+   [
+     {
+       "source": "/api/<*>",
+       "target": "https://<app-runner-domain>/api/<*>",
+       "status": "200",
+       "condition": null
+     },
+     {
+       "source": "/<*>",
+       "target": "/index.html",
+       "status": "200",
+       "condition": null
+     }
+   ]
+   ```
 3. After saving, Amplify redeploys automatically. When it finishes, open the site, trigger registration/login, and confirm via DevTools that `https://<app-runner-domain>/api/...` responds with `200`/`201`.
 
 Amplify rebuilds automatically whenever you push to the connected Git branch.

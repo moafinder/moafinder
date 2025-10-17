@@ -129,6 +129,7 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  disabled?: boolean | null;
   emailVerified?: boolean | null;
   emailVerification?: {
     tokenHash?: string | null;
@@ -411,6 +412,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  disabled?: T;
   emailVerified?: T;
   emailVerification?:
     | T
