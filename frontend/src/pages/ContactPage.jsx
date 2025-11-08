@@ -67,10 +67,9 @@ const ContactPage = () => {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div>
           <h2 className="text-lg font-semibold mb-2">Adresse</h2>
-          <p>MoaFinder<br />Turmstraße 75<br />10555 Berlin</p>
+          <p>MoaFinder<br />Wiclefstraße 32<br />10551 Berlin</p>
           <h2 className="text-lg font-semibold mb-2 mt-4">Kontakt</h2>
-          <p>Telefon: <a href="tel:+493012345678" className="text-brand hover:underline">030 123 456 78</a></p>
-          <p>Email: <a href="mailto:info@moafinder.de" className="text-brand hover:underline">info@moafinder.de</a></p>
+          <p>Email: <a href="mailto:moafinder@moabit.world" className="text-brand hover:underline">moafinder@moabit.world</a></p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

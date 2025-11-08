@@ -40,19 +40,13 @@ const Footer = () => {
             <h2 className="text-lg font-semibold mb-2">Kontakt</h2>
             <p>
               MoaFinder<br />
-              Turmstraße 75<br />
-              10555 Berlin
+              Wiclefstraße 32<br />
+              10551 Berlin
             </p>
             <p className="mt-2">
-              Telefon:{' '}
-              <a href="tel:+493012345678" className="text-brand hover:underline">
-                030 123 456 78
-              </a>
-            </p>
-            <p>
               Email:{' '}
-              <a href="mailto:info@moafinder.de" className="text-brand hover:underline">
-                info@moafinder.de
+              <a href="mailto:moafinder@moabit.world" className="text-brand hover:underline">
+                moafinder@moabit.world
               </a>
             </p>
           </div>
