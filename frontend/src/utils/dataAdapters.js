@@ -118,6 +118,7 @@ export function adaptEvent(doc) {
     cost,
     registration,
     tags,
+    recurrence,
   } = doc;
 
   const startDateObj = startDate ? new Date(startDate) : null;
@@ -176,6 +177,59 @@ export function adaptEvent(doc) {
       ? `${excerptSource.slice(0, 197).trimEnd()}…`
       : excerptSource ?? '';
 
+  // Recurrence details (human readable)
+  const rec = recurrence && typeof recurrence === 'object' ? recurrence : null;
+  const dowMap = {
+    mon: 'Montag',
+    tue: 'Dienstag',
+    wed: 'Mittwoch',
+    thu: 'Donnerstag',
+    fri: 'Freitag',
+    sat: 'Samstag',
+    sun: 'Sonntag',
+  };
+  const weekIndexMap = {
+    first: 'ersten',
+    second: 'zweiten',
+    third: 'dritten',
+    fourth: 'vierten',
+    last: 'letzten',
+  };
+  let recurrenceLabel = '';
+  if (eventType && eventType !== 'einmalig') {
+    const timePart = timeLabel ? `, jeweils ${timeLabel}` : '';
+    const untilPart = rec?.repeatUntil
+      ? `, bis ${new Date(rec.repeatUntil).toLocaleDateString('de-DE')}`
+      : '';
+
+    if (eventType === 'wöchentlich') {
+      const days = Array.isArray(rec?.daysOfWeek) ? rec.daysOfWeek : [];
+      if (days.length > 0) {
+        const names = days.map((d) => dowMap[d] || d);
+        const joined = names.length > 1
+          ? `${names.slice(0, -1).join(', ')} und ${names[names.length - 1]}`
+          : names[0];
+        recurrenceLabel = `Wöchentlich jeden ${joined}${timePart}${untilPart}`;
+      } else {
+        recurrenceLabel = `Wöchentlich${timePart}${untilPart}`;
+      }
+    } else if (eventType === 'täglich') {
+      recurrenceLabel = `Täglich${timePart}${untilPart}`;
+    } else if (eventType === 'monatlich') {
+      if (rec?.monthlyMode === 'nthWeekday' && rec?.monthlyWeekIndex && rec?.monthlyWeekday) {
+        const idx = weekIndexMap[rec.monthlyWeekIndex] || rec.monthlyWeekIndex;
+        const wd = dowMap[rec.monthlyWeekday] || rec.monthlyWeekday;
+        recurrenceLabel = `Monatlich am ${idx} ${wd}${timePart}${untilPart}`;
+      } else if (rec?.monthlyMode === 'dayOfMonth' && rec?.monthlyDayOfMonth) {
+        recurrenceLabel = `Monatlich am ${rec.monthlyDayOfMonth}. ${timePart}${untilPart}`.replace('  ', ' ');
+      } else {
+        recurrenceLabel = `Monatlich${timePart}${untilPart}`;
+      }
+    } else if (eventType === 'jährlich') {
+      recurrenceLabel = `Jährlich${timePart}${untilPart}`;
+    }
+  }
+
   return {
     id,
     title,
@@ -202,6 +256,8 @@ export function adaptEvent(doc) {
     registration: registration && typeof registration === 'object' ? registration : null,
     image: adaptedImage,
     colorHex: primaryColor,
+    recurrence: rec,
+    recurrenceLabel,
     raw: doc,
   };
 }

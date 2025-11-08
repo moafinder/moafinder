@@ -181,6 +181,9 @@ const EventDetail = () => {
             {timeLabel && ` / ${timeLabel}`}
           </p>
           <p className="text-sm text-gray-500">{event.eventTypeLabel}</p>
+          {event.recurrenceLabel && (
+            <p className="text-sm text-gray-600">Rhythmus: {event.recurrenceLabel}</p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {targets.map((target) => (
