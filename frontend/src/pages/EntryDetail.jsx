@@ -46,14 +46,14 @@ const EntryDetail = () => {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h2 className="text-2xl font-bold mb-4">Eintrag nicht gefunden</h2>
-        <Link to="/entries" className="text-primary-700 hover:underline">Zurück zur Übersicht</Link>
+        <Link to="/entries" className="text-brand hover:underline">Zurück zur Übersicht</Link>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <Link to="/entries" className="text-primary-700 hover:underline">← Zurück zur Übersicht</Link>
+      <Link to="/entries" className="text-brand hover:underline">← Zurück zur Übersicht</Link>
       <article className="mt-4 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">{entry.title}</h1>
         <p className="text-sm text-gray-500 mb-4">

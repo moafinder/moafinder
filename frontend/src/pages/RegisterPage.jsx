@@ -143,7 +143,7 @@ const RegisterPage = () => {
           {isSubmitting ? 'Wird erstellt…' : 'Konto erstellen'}
         </button>
       </form>
-      <p className="mt-4 text-sm">Bereits registriert? <Link to="/login" className="text-primary-700 hover:underline">Anmelden</Link></p>
+      <p className="mt-4 text-sm">Bereits registriert? <Link to="/login" className="text-brand hover:underline">Anmelden</Link></p>
     </div>
   );
 };

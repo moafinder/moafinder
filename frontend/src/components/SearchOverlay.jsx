@@ -87,7 +87,7 @@ const SearchOverlay = ({ isVisible, onClose }) => {
           <div className="search-results">
             <ul className="space-y-2">
               {results.map((item) => (
-                <li key={`${item.type}-${item.id}`} className="text-gray-700 hover:text-primary-700">
+                <li key={`${item.type}-${item.id}`} className="text-gray-700 hover:text-brand">
                   {item.type === 'place' ? (
                     <Link to={`/place/${item.id}`} onClick={onClose}>
                       {item.label}

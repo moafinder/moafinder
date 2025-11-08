@@ -69,8 +69,8 @@ const ContactPage = () => {
           <h2 className="text-lg font-semibold mb-2">Adresse</h2>
           <p>MoaFinder<br />Turmstraße 75<br />10555 Berlin</p>
           <h2 className="text-lg font-semibold mb-2 mt-4">Kontakt</h2>
-          <p>Telefon: <a href="tel:+493012345678" className="text-primary-700 hover:underline">030 123 456 78</a></p>
-          <p>Email: <a href="mailto:info@moafinder.de" className="text-primary-700 hover:underline">info@moafinder.de</a></p>
+          <p>Telefon: <a href="tel:+493012345678" className="text-brand hover:underline">030 123 456 78</a></p>
+          <p>Email: <a href="mailto:info@moafinder.de" className="text-brand hover:underline">info@moafinder.de</a></p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -122,7 +122,7 @@ const ContactPage = () => {
           </div>
           <button
             type="submit"
-            className="bg-primary-700 text-white px-4 py-2 rounded hover:bg-primary-800 disabled:opacity-75 disabled:cursor-not-allowed"
+            className="bg-brand text-white px-4 py-2 rounded hover:bg-brand-dark transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Wird gesendet…' : 'Nachricht senden'}

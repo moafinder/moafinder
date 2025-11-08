@@ -45,13 +45,13 @@ const Footer = () => {
             </p>
             <p className="mt-2">
               Telefon:{' '}
-              <a href="tel:+493012345678" className="text-primary-700 hover:underline">
+              <a href="tel:+493012345678" className="text-brand hover:underline">
                 030 123 456 78
               </a>
             </p>
             <p>
               Email:{' '}
-              <a href="mailto:info@moafinder.de" className="text-primary-700 hover:underline">
+              <a href="mailto:info@moafinder.de" className="text-brand hover:underline">
                 info@moafinder.de
               </a>
             </p>
@@ -63,14 +63,14 @@ const Footer = () => {
             <ul className="space-y-1">
               {navigationLinks.map((item) => (
                 <li key={item.to}>
-                  <Link to={item.to} className="text-gray-700 hover:text-primary-700">
+                  <Link to={item.to} className="text-gray-700 hover:text-brand">
                     {item.label}
                   </Link>
                 </li>
               ))}
               {authLinks.map((item) => (
                 <li key={item.to}>
-                  <Link to={item.to} className="text-gray-700 hover:text-primary-700">
+                  <Link to={item.to} className="text-gray-700 hover:text-brand">
                     {item.label}
                   </Link>
                 </li>
@@ -82,13 +82,13 @@ const Footer = () => {
           <div>
             <h2 className="text-lg font-semibold mb-2">Folgen Sie uns</h2>
             <div className="flex space-x-4 text-lg">
-              <a href="https://facebook.com" aria-label="Facebook" className="text-gray-700 hover:text-primary-700">
+              <a href="https://facebook.com" aria-label="Facebook" className="text-gray-700 hover:text-brand">
                 <FontAwesomeIcon icon={faFacebookF} />
               </a>
-              <a href="https://instagram.com" aria-label="Instagram" className="text-gray-700 hover:text-primary-700">
+              <a href="https://instagram.com" aria-label="Instagram" className="text-gray-700 hover:text-brand">
                 <FontAwesomeIcon icon={faInstagram} />
               </a>
-              <a href="https://twitter.com" aria-label="Twitter" className="text-gray-700 hover:text-primary-700">
+              <a href="https://twitter.com" aria-label="Twitter" className="text-gray-700 hover:text-brand">
                 <FontAwesomeIcon icon={faTwitter} />
               </a>
             </div>
