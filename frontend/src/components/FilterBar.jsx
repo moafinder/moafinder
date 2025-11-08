@@ -203,15 +203,15 @@ const FilterBar = ({
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
+              defaultValue=""
               onChange={(e) => {
                 const value = e.target.value;
                 if (value && !selectedThemes.includes(value)) {
                   setSelectedThemes(prev => [...prev, value]);
                 }
-                e.target.value = '';
               }}
             >
-              <option value="">Themen</option>
+              <option value="" disabled>Themen</option>
               {themeOptions.map(theme => (
                 <option key={theme} value={theme}>{theme}</option>
               ))}
@@ -244,15 +244,15 @@ const FilterBar = ({
             <select
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
+              defaultValue=""
               onChange={(e) => {
                 const value = e.target.value;
                 if (value && !selectedPlaces.includes(value)) {
                   setSelectedPlaces(prev => [...prev, value]);
                 }
-                e.target.value = '';
               }}
             >
-              <option value="">Orte</option>
+              <option value="" disabled>Orte</option>
               {placeOptions.map(place => (
                 <option key={place} value={place}>{place}</option>
               ))}
