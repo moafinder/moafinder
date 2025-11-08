@@ -210,6 +210,14 @@ const FormatsPage = () => {
           <p className="text-sm font-semibold text-gray-800 mb-1">{event.title}</p>
           {event.excerpt && <p className="text-sm text-gray-600">{event.excerpt}</p>}
           <div className="mt-2 flex flex-wrap gap-2">
+            {event.targetTags?.map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded"
+              >
+                {tag}
+              </span>
+            ))}
             {event.costIsFree && (
               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
                 kostenlos

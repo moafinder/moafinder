@@ -167,7 +167,7 @@ const FilterBar = ({
                   : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
               }`}
             >
-              umsonst
+              kostenlos
             </button>
           </div>
         </div>
