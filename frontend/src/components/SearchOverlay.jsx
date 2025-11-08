@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { EVENTS, PLACES } from '../data/mockData';
 
 /**
  * Search overlay component. Displays a full‑screen dark overlay with
@@ -24,32 +25,27 @@ const SearchOverlay = ({ isVisible, onClose }) => {
     }
   }, [isVisible]);
 
-  // Perform simple search on local data. In production you would
-  // query your API here. The list contains entries and places for
-  // demonstration.
+  // Perform simple search on local mock data (events + places).
+  // In production, replace this with a backend query.
   useEffect(() => {
     if (!query) {
       setResults([]);
       return;
     }
     const q = query.toLowerCase();
-    const places = [
-      { id: 1, name: 'Teehaus Moabit' },
-      { id: 2, name: 'Öffentliche Bibliothek' },
-      { id: 3, name: 'Markthalle Moabit' },
-    ];
-    const entries = [
-      { id: 1, title: 'Moabit im Wandel – Neue Projekte 2025' },
-      { id: 2, title: 'Konzert im Park – Musik unter freiem Himmel' },
-      { id: 3, title: 'Geschichte Moabits – Eine Reise durch die Zeit' },
-    ];
-    const foundPlaces = places
-      .filter((p) => p.name.toLowerCase().includes(q))
-      .map((p) => ({ type: 'place', id: p.id, label: p.name }));
-    const foundEntries = entries
-      .filter((e) => e.title.toLowerCase().includes(q))
-      .map((e) => ({ type: 'entry', id: e.id, label: e.title }));
-    setResults([...foundPlaces, ...foundEntries]);
+
+    const foundPlaces = PLACES.filter((p) => {
+      const name = `${p.name ?? ''} ${p.shortName ?? ''}`.toLowerCase();
+      const cats = Array.isArray(p.categories) ? p.categories.join(' ').toLowerCase() : '';
+      return name.includes(q) || cats.includes(q);
+    }).map((p) => ({ type: 'place', id: p.id, label: p.name }));
+
+    const foundEvents = EVENTS.filter((e) => {
+      const hay = `${e.title ?? ''} ${e.place ?? ''} ${e.category ?? ''}`.toLowerCase();
+      return hay.includes(q);
+    }).map((e) => ({ type: 'event', id: e.id, label: e.title }));
+
+    setResults([...foundEvents, ...foundPlaces]);
   }, [query]);
 
   if (!isVisible) return null;
@@ -93,7 +89,7 @@ const SearchOverlay = ({ isVisible, onClose }) => {
                       {item.label}
                     </Link>
                   ) : (
-                    <Link to={`/entries/${item.id}`} onClick={onClose}>
+                    <Link to={`/event/${item.id}`} onClick={onClose}>
                       {item.label}
                     </Link>
                   )}
