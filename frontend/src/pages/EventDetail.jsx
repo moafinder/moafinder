@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getEvent } from '../api/events';
+import { getEvent, listEvents } from '../api/events';
 import { adaptEvent } from '../utils/dataAdapters';
 
 const EventDetail = () => {
@@ -8,6 +8,8 @@ const EventDetail = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [related, setRelated] = useState([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +45,71 @@ const EventDetail = () => {
       cancelled = true;
     };
   }, [id]);
+
+  // Load related events once the current event is available
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRelated() {
+      if (!event) return;
+      setLoadingRelated(true);
+      try {
+        const resp = await listEvents({
+          limit: 100,
+          depth: 2,
+          sort: 'startDate',
+          'where[status][equals]': 'approved',
+        });
+        const docs = Array.isArray(resp?.docs) ? resp.docs : [];
+        const candidates = docs
+          .map(adaptEvent)
+          .filter(Boolean)
+          .filter((e) => e.id !== event.id);
+
+        // Score by same organizer, location, shared topic tags
+        const orgId = event.organizer?.id ?? null;
+        const locId = event.location?.id ?? null;
+        const topicSet = new Set(event.topicTags || []);
+
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const scored = candidates
+          // Prefer upcoming or ongoing items
+          .filter((e) => {
+            if (e.endDateObj) return e.endDateObj >= todayStart;
+            if (e.startDateObj) return e.startDateObj >= todayStart;
+            return true;
+          })
+          .map((e) => {
+            let score = 0;
+            if (orgId && e.organizer?.id === orgId) score += 5;
+            if (locId && e.location?.id === locId) score += 3;
+            if (e.topicTags?.some((t) => topicSet.has(t))) score += 2;
+            return { e, score };
+          })
+          .filter(({ score }) => score > 0)
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const aDate = a.e.startDateObj || new Date(8640000000000000);
+            const bDate = b.e.startDateObj || new Date(8640000000000000);
+            return aDate - bDate;
+          })
+          .slice(0, 3)
+          .map(({ e }) => e);
+
+        if (!cancelled) setRelated(scored);
+      } catch (_) {
+        if (!cancelled) setRelated([]);
+      } finally {
+        if (!cancelled) setLoadingRelated(false);
+      }
+    }
+
+    loadRelated();
+    return () => {
+      cancelled = true;
+    };
+  }, [event]);
 
   const dateFormatter = useMemo(
     () =>
@@ -224,6 +291,39 @@ const EventDetail = () => {
           )}
         </aside>
       </section>
+
+      {/* Related events */}
+      {(loadingRelated || related.length > 0) && (
+        <section className="mt-6">
+          <h2 className="text-xl font-semibold mb-3">Weitere Veranstaltungen</h2>
+          {loadingRelated ? (
+            <p className="text-gray-600">Ähnliche Veranstaltungen werden geladen …</p>
+          ) : (
+            <div className="space-y-2">
+              {related.map((ev) => (
+                <Link
+                  key={ev.id}
+                  to={`/event/${ev.id}`}
+                  className="block rounded-lg border border-gray-200 hover:border-gray-300 p-3"
+                >
+                  <p className="text-sm text-gray-600">
+                    {ev.startDateObj ? dateFormatter.format(ev.startDateObj) : 'Datum folgt'}
+                    {ev.timeLabel && ` / ${ev.timeLabel}`}
+                  </p>
+                  <h3 className="font-bold text-gray-800 mt-0.5">{ev.title}</h3>
+                  <p className="text-sm text-gray-700">
+                    {ev.location?.shortName ?? ev.location?.name ?? 'Ort folgt'}
+                    {ev.organizer?.name && ` · ${ev.organizer.name}`}
+                  </p>
+                </Link>
+              ))}
+              {related.length === 0 && !loadingRelated && (
+                <p className="text-gray-600">Keine ähnlichen Veranstaltungen gefunden.</p>
+              )}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };
