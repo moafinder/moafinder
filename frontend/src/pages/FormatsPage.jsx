@@ -234,9 +234,7 @@ const FormatsPage = () => {
           alt="MoaFinder Banner"
           className="mx-auto w-auto h-32 md:h-40 object-contain"
         />
-        <p className="text-xl md:text-2xl font-semibold mt-2">
-          Meine Mitte ist Moabit
-        </p>
+        {/* Subtitle duplicated in the banner graphic; remove extra text line */}
       </div>
 
       <FilterBar
