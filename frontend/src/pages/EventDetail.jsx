@@ -252,6 +252,13 @@ const EventDetail = () => {
             <p className="mt-2 text-sm text-gray-700">
               {event.location?.name ?? 'Ort folgt'}
             </p>
+            {event.location?.id && (
+              <p className="text-sm mt-1">
+                <Link to={`/place/${event.location.id}`} className="text-[#7CB92C] hover:underline font-semibold">Ortprofil ansehen</Link>
+                <span className="text-gray-400"> · </span>
+                <Link to="/orte" className="text-[#7CB92C] hover:underline">Karte öffnen</Link>
+              </p>
+            )}
             {addressLines.length > 0 ? (
               <address className="not-italic text-sm text-gray-600">
                 {addressLines.map((line) => (
