@@ -32,14 +32,19 @@ const Events: CollectionConfig = {
       }
       return true
     },
-    create: async ({ req }: { req: PayloadRequest }) => {
+    create: async ({ req, data }: { req: PayloadRequest; data?: any }) => {
       const user = req.user as any
       if (!user) return false
+
+      // Admins and editors may always create events (used for editorial backfills/tests)
+      if (user.role === 'admin' || user.role === 'editor') return true
+
       // Allow creation of drafts regardless of organization approval
-      const requestedStatus = (req?.body as any)?.status
+      const requestedStatus = (data as any)?.status ?? (req?.body as any)?.status
       if (requestedStatus === 'draft') {
         return true
       }
+
       // Local dev override: allow unverified only when explicitly enabled (but still require org approved to post?)
       const emailOk =
         (process.env.ALLOW_UNVERIFIED === 'true' && process.env.NODE_ENV !== 'production') || !!user.emailVerified
