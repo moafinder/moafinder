@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const FilterBar = ({
   onFilterChange,
@@ -15,6 +15,8 @@ const FilterBar = ({
   const [selectedThemes, setSelectedThemes] = useState([]);
   const [selectedPlaces, setSelectedPlaces] = useState([]);
   const [selectedDates, setSelectedDates] = useState([]);
+  const dateInputRef = useRef(null);
+  const [dateMode, setDateMode] = useState(false);
 
   const normalizedAgeGroupOptions = useMemo(
     () => ageGroupOptions.map((group) => group?.trim()).filter(Boolean),
@@ -71,6 +73,50 @@ const FilterBar = ({
     });
 
   }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates]);
+
+  const openNativeDatePicker = () => {
+    const el = dateInputRef.current;
+    if (!el) return;
+    // Switch to native date input and try to open the picker
+    if (el.type !== 'date') {
+      try {
+        el.type = 'date';
+        setDateMode(true);
+      } catch (_) {
+        // ignore
+      }
+    }
+    try {
+      // showPicker is supported in modern browsers including iOS 16+
+      if (typeof el.showPicker === 'function') {
+        el.showPicker();
+      } else {
+        // Fallback: focus the element to trigger the native UI
+        el.focus();
+      }
+    } catch (_) {
+      // Some browsers throw if called while hidden; ignore
+      el.focus();
+    }
+  };
+
+  const onDateChange = (e) => {
+    const value = e.target.value;
+    if (value && !selectedDates.includes(value)) {
+      setSelectedDates((prev) => [...prev, value]);
+    }
+    // Clear input and revert to text to keep layout stable
+    e.target.value = '';
+    // Defer to allow native UI to close gracefully
+    setTimeout(() => {
+      if (dateInputRef.current) {
+        try {
+          dateInputRef.current.type = 'text';
+        } catch (_) {}
+      }
+      setDateMode(false);
+    }, 0);
+  };
 
   
   return (
@@ -237,25 +283,28 @@ const FilterBar = ({
           {/* Date selector */}
           <div className="relative">
             <input
+              ref={dateInputRef}
               type="text"
+              inputMode="none"
               placeholder="Termine"
               className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
-              onFocus={(e) => (e.target.type = 'date')}
-              onBlur={(e) => (e.target.type = 'text')}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value && !selectedDates.includes(value)) {
-                  setSelectedDates(prev => [...prev, value]);
-                }
-                e.target.value = '';
-              }}
+              onFocus={openNativeDatePicker}
+              onClick={openNativeDatePicker}
+              onChange={onDateChange}
+              aria-label="Termine wählen"
             />
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 w-8 flex items-center justify-center cursor-pointer"
+              onClick={openNativeDatePicker}
+              aria-label="Kalender öffnen"
+              tabIndex={-1}
+            >
               <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 0l5 6 5-6H0z" />
               </svg>
-            </span>
+            </button>
             {selectedDates.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedDates.map(date => (
