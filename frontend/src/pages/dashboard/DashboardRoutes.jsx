@@ -12,6 +12,7 @@ import OrganizerGuidelinesPage from './OrganizerGuidelinesPage';
 import EditorEventsPage from './EditorEventsPage';
 import EditorOrganizationsPage from './EditorOrganizationsPage';
 import EditorLocationsPage from './EditorLocationsPage';
+import EditorPlaceCreatePage from './EditorPlaceCreatePage';
 import EditorMediaPage from './EditorMediaPage';
 import EditorGuidelinesPage from './EditorGuidelinesPage';
 import EditorArchivePage from './EditorArchivePage';
@@ -56,6 +57,14 @@ const DashboardRoutes = () => {
           element={
             <RoleGuard roles={['editor', 'admin']}>
               <EditorLocationsPage />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="editor/places/new"
+          element={
+            <RoleGuard roles={['editor', 'admin']}>
+              <EditorPlaceCreatePage />
             </RoleGuard>
           }
         />

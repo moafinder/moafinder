@@ -49,3 +49,31 @@ export async function getLocation(id, params = {}) {
   }
   return response.json();
 }
+
+export async function createLocation(data) {
+  const response = await fetch(buildApiUrl('/api/locations'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Ort konnte nicht erstellt werden.');
+  }
+  return response.json();
+}
+
+export async function updateLocation(id, data) {
+  const response = await fetch(buildApiUrl(`/api/locations/${id}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Ort konnte nicht aktualisiert werden.');
+  }
+  return response.json();
+}
