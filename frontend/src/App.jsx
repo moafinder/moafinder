@@ -7,6 +7,8 @@ import FormatsPage from './pages/FormatsPage';
 import PlacesPage from './pages/PlacesPage';
 import ContactPage from './pages/ContactPage';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import RegisterPage from './pages/RegisterPage';
 import EventDetail from './pages/EventDetail';
 import PlaceProfile from './pages/PlaceProfile';
@@ -33,6 +35,8 @@ function App() {
           <Route path="/event/:id" element={<EventDetail />} />
           <Route path="/kontakt" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/events/new" element={<EventCreate />} />

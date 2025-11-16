@@ -123,12 +123,12 @@ const LoginPage = () => {
 
             {/* Password Recovery Link */}
             <div className="text-center">
-              <a 
-                href="google.com" 
+              <Link
+                to="/forgot-password"
                 className="text-[#7CB92C] hover:text-[#5a8b20] text-sm font-medium transition-colors duration-300"
               >
                 Passwort vergessen?
-              </a>
+              </Link>
             </div>
           </form>
 
