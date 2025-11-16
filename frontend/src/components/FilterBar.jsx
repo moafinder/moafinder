@@ -199,28 +199,30 @@ const FilterBar = ({
       {/* Dropdowns row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Themes dropdown */}
-          <div className="relative">
-            <select
-              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
-              disabled={disabled}
-              defaultValue=""
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value && !selectedThemes.includes(value)) {
-                  setSelectedThemes(prev => [...prev, value]);
-                }
-              }}
-            >
-              <option value="" disabled>Themen</option>
-              {themeOptions.map(theme => (
-                <option key={theme} value={theme}>{theme}</option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
-              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l6 8 6-8H0z" />
-              </svg>
-            </span>
+          <div>
+            <div className="relative">
+              <select
+                className="w-full p-2 pr-12 border-2 border-black rounded-none appearance-none focus:outline-none"
+                disabled={disabled}
+                defaultValue=""
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value && !selectedThemes.includes(value)) {
+                    setSelectedThemes(prev => [...prev, value]);
+                  }
+                }}
+              >
+                <option value="" disabled>Themen</option>
+                {themeOptions.map(theme => (
+                  <option key={theme} value={theme}>{theme}</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
+                <svg className="w-5 h-3 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0l6 8 6-8H0z" />
+                </svg>
+              </span>
+            </div>
             {selectedThemes.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedThemes.map(theme => (
@@ -240,28 +242,30 @@ const FilterBar = ({
           </div>
 
           {/* Places dropdown */}
-          <div className="relative">
-            <select
-              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
-              disabled={disabled}
-              defaultValue=""
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value && !selectedPlaces.includes(value)) {
-                  setSelectedPlaces(prev => [...prev, value]);
-                }
-              }}
-            >
-              <option value="" disabled>Orte</option>
-              {placeOptions.map(place => (
-                <option key={place} value={place}>{place}</option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
-              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l6 8 6-8H0z" />
-              </svg>
-            </span>
+          <div>
+            <div className="relative">
+              <select
+                className="w-full p-2 pr-12 border-2 border-black rounded-none appearance-none focus:outline-none"
+                disabled={disabled}
+                defaultValue=""
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value && !selectedPlaces.includes(value)) {
+                    setSelectedPlaces(prev => [...prev, value]);
+                  }
+                }}
+              >
+                <option value="" disabled>Orte</option>
+                {placeOptions.map(place => (
+                  <option key={place} value={place}>{place}</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
+                <svg className="w-5 h-3 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0l6 8 6-8H0z" />
+                </svg>
+              </span>
+            </div>
             {selectedPlaces.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedPlaces.map(place => (
@@ -281,30 +285,32 @@ const FilterBar = ({
           </div>
 
           {/* Date selector */}
-          <div className="relative">
-            <input
-              ref={dateInputRef}
-              type="text"
-              inputMode="none"
-              placeholder="Termine"
-              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
-              disabled={disabled}
-              onFocus={openNativeDatePicker}
-              onClick={openNativeDatePicker}
-              onChange={onDateChange}
-              aria-label="Termine wählen"
-            />
-            <button
-              type="button"
-              className="absolute top-0 right-0 h-full w-10 flex items-center justify-center cursor-pointer"
-              onClick={openNativeDatePicker}
-              aria-label="Kalender öffnen"
-              tabIndex={-1}
-            >
-              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l6 8 6-8H0z" />
-              </svg>
-            </button>
+          <div>
+            <div className="relative">
+              <input
+                ref={dateInputRef}
+                type="text"
+                inputMode="none"
+                placeholder="Termine"
+                className="w-full p-2 pr-12 border-2 border-black rounded-none appearance-none focus:outline-none"
+                disabled={disabled}
+                onFocus={openNativeDatePicker}
+                onClick={openNativeDatePicker}
+                onChange={onDateChange}
+                aria-label="Termine wählen"
+              />
+              <button
+                type="button"
+                className="absolute top-0 right-0 h-full w-12 flex items-center justify-center cursor-pointer"
+                onClick={openNativeDatePicker}
+                aria-label="Kalender öffnen"
+                tabIndex={-1}
+              >
+                <svg className="w-5 h-3 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0l6 8 6-8H0z" />
+                </svg>
+              </button>
+            </div>
             {selectedDates.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {selectedDates.map(date => (

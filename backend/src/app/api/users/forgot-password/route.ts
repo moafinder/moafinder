@@ -124,10 +124,13 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     // Never leak errors to the client for privacy; log server-side
-    try { (await getPayload({ config: configPromise })).logger?.error?.(error) } catch {}
+    try {
+      (await getPayload({ config: configPromise })).logger?.error?.(error)
+    } catch (_ignore) {
+      // Swallow secondary logging errors (network/boot issues)
+    }
   }
 
   // Always respond success to avoid user enumeration
   return jsonResponse(request, { success: true })
 }
-
