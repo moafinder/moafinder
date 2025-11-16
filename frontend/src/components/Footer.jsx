@@ -16,7 +16,7 @@ const Footer = () => {
   const { user } = useAuth();
 
   const navigationLinks = [
-    { label: 'Formate', to: '/formate' },
+    { label: 'Events', to: '/formate' },
     { label: 'Orte', to: '/orte' },
     { label: 'Einträge', to: '/events' },
     { label: 'Kontakt', to: '/kontakt' },

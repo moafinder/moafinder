@@ -14,7 +14,7 @@ const Header = () => {
   const navItems = useMemo(
     () => [
       {
-        label: 'Formate',
+        label: 'Events',
         to: '/formate',
         match: ['/', '/formate'],
       },
@@ -33,8 +33,8 @@ const Header = () => {
         external: true,
       },
       {
-        label: 'Kiezmedium',
-        to: 'https://kiezmedium.de',
+        label: 'Moazin',
+        to: 'https://www.moazin.de/',
         external: true,
       },
     ],
