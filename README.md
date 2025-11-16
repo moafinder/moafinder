@@ -30,7 +30,7 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 SMTP_FROM_EMAIL=your-email@gmail.com
 SMTP_FROM_NAME=Moabit Finder Team
-CONTACT_RECIPIENT_EMAILS=info@moafinder.de
+CONTACT_RECIPIENT_EMAILS=moafinder@moabit.world
 EVENT_APPROVAL_NOTIFICATION_EMAILS=team@moafinder.de
 ```
 
