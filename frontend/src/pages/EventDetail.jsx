@@ -30,7 +30,17 @@ const EventDetail = () => {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Veranstaltung konnte nicht geladen werden.');
+          const raw = err instanceof Error ? err.message : String(err);
+          let message = 'Veranstaltung konnte nicht geladen werden.';
+          if (/not\s*found/i.test(raw)) {
+            message = 'Diese Veranstaltung wurde nicht gefunden.';
+          } else if (raw && raw.trim().startsWith('{')) {
+            // Hide raw system JSON
+            message = 'Ihre Anfrage konnte nicht verarbeitet werden.';
+          } else if (raw && raw.length < 200) {
+            message = raw;
+          }
+          setError(message);
         }
       } finally {
         if (!cancelled) {

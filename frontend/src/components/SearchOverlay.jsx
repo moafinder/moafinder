@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EVENTS, PLACES } from '../data/mockData';
+import { listEvents } from '../api/events';
+import { listLocations } from '../api/locations';
+import { adaptEvent, adaptLocation } from '../utils/dataAdapters';
 
 /**
  * Search overlay component. Displays a full‑screen dark overlay with
@@ -25,28 +27,65 @@ const SearchOverlay = ({ isVisible, onClose }) => {
     }
   }, [isVisible]);
 
-  // Perform simple search on local mock data (events + places).
-  // In production, replace this with a backend query.
+  // Load searchable data when overlay opens
+  const [eventCache, setEventCache] = useState([]);
+  const [placeCache, setPlaceCache] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (!query) {
+    let cancelled = false;
+    async function loadData() {
+      if (!isVisible) return;
+      setLoading(true);
+      try {
+        const [eventsRes, placesRes] = await Promise.all([
+          listEvents({ limit: 200, depth: 2, sort: 'startDate', 'where[status][equals]': 'approved' }).catch(() => null),
+          listLocations({ limit: 200 }).catch(() => null),
+        ]);
+        if (!cancelled) {
+          const events = Array.isArray(eventsRes?.docs) ? eventsRes.docs.map(adaptEvent).filter(Boolean) : [];
+          const places = Array.isArray(placesRes?.docs) ? placesRes.docs.map(adaptLocation).filter(Boolean) : [];
+          setEventCache(events);
+          setPlaceCache(places);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [isVisible]);
+
+  // Filter cached results on the client for fast suggestions
+  useEffect(() => {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) {
       setResults([]);
       return;
     }
-    const q = query.toLowerCase();
 
-    const foundPlaces = PLACES.filter((p) => {
-      const name = `${p.name ?? ''} ${p.shortName ?? ''}`.toLowerCase();
-      const cats = Array.isArray(p.categories) ? p.categories.join(' ').toLowerCase() : '';
-      return name.includes(q) || cats.includes(q);
-    }).map((p) => ({ type: 'place', id: p.id, label: p.name }));
+    const evs = eventCache
+      .filter((e) => {
+        const hay = `${e.title ?? ''} ${e.organizer?.name ?? ''} ${e.location?.name ?? ''} ${
+          (e.topicTags || []).join(' ')
+        }`.toLowerCase();
+        return hay.includes(q);
+      })
+      .slice(0, 8)
+      .map((e) => ({ type: 'event', id: e.id, label: e.title }));
 
-    const foundEvents = EVENTS.filter((e) => {
-      const hay = `${e.title ?? ''} ${e.place ?? ''} ${e.category ?? ''}`.toLowerCase();
-      return hay.includes(q);
-    }).map((e) => ({ type: 'event', id: e.id, label: e.title }));
+    const pls = placeCache
+      .filter((p) => {
+        const hay = `${p.name ?? ''} ${p.shortName ?? ''}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .slice(0, 5)
+      .map((p) => ({ type: 'place', id: p.id, label: p.name }));
 
-    setResults([...foundEvents, ...foundPlaces]);
-  }, [query]);
+    setResults([...evs, ...pls]);
+  }, [query, eventCache, placeCache]);
 
   if (!isVisible) return null;
 
@@ -98,7 +137,7 @@ const SearchOverlay = ({ isVisible, onClose }) => {
             </ul>
           </div>
         ) : (
-          query && (
+          query && !loading && (
             <p className="text-gray-600 mt-2">
               »Zu Ihrem Suchbegriff ›{query}‹ haben wir keine Ergebnisse auf unseren Seiten gefunden. Bitte versuchen Sie es mit einem anderen Begriff.«
             </p>
