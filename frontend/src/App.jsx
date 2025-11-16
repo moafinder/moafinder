@@ -15,6 +15,8 @@ import PlaceProfile from './pages/PlaceProfile';
 import EventsList from './pages/EventsList';
 import EventCreate from './pages/EventCreate';
 import EventEdit from './pages/EventEdit';
+import ImpressumPage from './pages/ImpressumPage';
+import DatenschutzPage from './pages/DatenschutzPage';
 import DashboardRoutes from './pages/dashboard/DashboardRoutes';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -41,6 +43,8 @@ function App() {
           <Route path="/events" element={<EventsList />} />
           <Route path="/events/new" element={<EventCreate />} />
           <Route path="/events/:id/edit" element={<EventEdit />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
+          <Route path="/datenschutz" element={<DatenschutzPage />} />
           <Route
             path="/dashboard/*"
             element={(
