@@ -189,7 +189,7 @@ const FilterBar = ({
                 setEventType(val === 0 ? 'regelmäßig' : val === 1 ? 'all' : 'einmalig');
               }}
 
-              className="filter-range w-24"
+              className="filter-range w-48"
             />
           </div>
           <span className="text-sm text-center">einmalige Veranstaltungen</span>
@@ -201,7 +201,7 @@ const FilterBar = ({
           {/* Themes dropdown */}
           <div className="relative">
             <select
-              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
               defaultValue=""
               onChange={(e) => {
@@ -216,9 +216,9 @@ const FilterBar = ({
                 <option key={theme} value={theme}>{theme}</option>
               ))}
             </select>
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
-              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l5 6 5-6H0z" />
+            <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
+              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l6 8 6-8H0z" />
               </svg>
             </span>
             {selectedThemes.length > 0 && (
@@ -242,7 +242,7 @@ const FilterBar = ({
           {/* Places dropdown */}
           <div className="relative">
             <select
-              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
               defaultValue=""
               onChange={(e) => {
@@ -257,9 +257,9 @@ const FilterBar = ({
                 <option key={place} value={place}>{place}</option>
               ))}
             </select>
-            <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center justify-center">
-              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l5 6 5-6H0z" />
+            <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-3">
+              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l6 8 6-8H0z" />
               </svg>
             </span>
             {selectedPlaces.length > 0 && (
@@ -287,7 +287,7 @@ const FilterBar = ({
               type="text"
               inputMode="none"
               placeholder="Termine"
-              className="w-full p-2 border-2 border-black rounded-none appearance-none focus:outline-none"
+              className="w-full p-2 pr-10 border-2 border-black rounded-none appearance-none focus:outline-none"
               disabled={disabled}
               onFocus={openNativeDatePicker}
               onClick={openNativeDatePicker}
@@ -296,13 +296,13 @@ const FilterBar = ({
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 w-8 flex items-center justify-center cursor-pointer"
+              className="absolute top-0 right-0 h-full w-10 flex items-center justify-center cursor-pointer"
               onClick={openNativeDatePicker}
               aria-label="Kalender öffnen"
               tabIndex={-1}
             >
-              <svg className="w-1/2 h-1/2 text-green-600" viewBox="0 0 10 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0l5 6 5-6H0z" />
+              <svg className="w-3.5 h-2 text-brand" viewBox="0 0 12 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0l6 8 6-8H0z" />
               </svg>
             </button>
             {selectedDates.length > 0 && (
