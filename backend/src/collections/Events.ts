@@ -34,36 +34,20 @@ const Events: CollectionConfig = {
     },
     create: async ({ req, data }: { req: PayloadRequest; data?: any }) => {
       const user = req.user as any
-      if (!user) return false
+      if (!user || user.disabled === true) return false
 
-      // Admins and editors may always create events (used for editorial backfills/tests)
+      // Always allow admins and editors
       if (user.role === 'admin' || user.role === 'editor') return true
 
-      // Allow creation of drafts regardless of organization approval
+      // Allow all authenticated organizers to create events, including submissions for review.
+      // Drafts are explicitly allowed as well.
       const requestedStatus = (data as any)?.status ?? (req?.body as any)?.status
-      if (requestedStatus === 'draft') {
+      if (!requestedStatus || requestedStatus === 'draft' || requestedStatus === 'pending') {
         return true
       }
 
-      // Local dev override: allow unverified only when explicitly enabled (but still require org approved to post?)
-      const emailOk =
-        (process.env.ALLOW_UNVERIFIED === 'true' && process.env.NODE_ENV !== 'production') || !!user.emailVerified
-
-      if (!emailOk) return false
-      if (user.disabled === true) return false
-
-      try {
-        // Require the organizer organization to be approved before posting
-        const result = await req.payload.find({
-          collection: 'organizations',
-          limit: 1,
-          where: { owner: { equals: user.id }, approved: { equals: true } } as any,
-        })
-        return (result?.totalDocs ?? 0) > 0
-      } catch (error) {
-        // If DB not reachable and healthcheck allows tolerance, deny safely
-        return false
-      }
+      // For other statuses (e.g., approved), restrict to editors/admins only (handled above).
+      return false
     },
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
