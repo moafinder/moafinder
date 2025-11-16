@@ -189,18 +189,20 @@ const OrganizerMediaPage = () => {
 
       let created = null;
 
+      // Read body once and try to parse as JSON to avoid "Body has already been consumed" issues
+      const bodyText = await response.text();
+      let parsed = null;
+      try {
+        parsed = bodyText ? JSON.parse(bodyText) : null;
+      } catch {
+        parsed = null;
+      }
+
       if (!response.ok) {
-        try {
-          const payload = await response.json();
-          const message = payload?.errors?.[0]?.message ?? payload?.message ?? 'Upload fehlgeschlagen';
-          throw new Error(message);
-        } catch (parseError) {
-          const text = await response.text();
-          throw new Error(text || 'Upload fehlgeschlagen');
-        }
+        const message = parsed?.errors?.[0]?.message || parsed?.message || bodyText || 'Upload fehlgeschlagen';
+        throw new Error(message);
       } else {
-        const payload = await response.json();
-        created = payload?.doc ?? payload;
+        created = parsed?.doc ?? parsed ?? null;
       }
 
       if (created) {
