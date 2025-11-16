@@ -510,11 +510,12 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
                 value: location.id,
               }))}
             />
-            <MultiSelectField
-              label="Tags"
+            <TagPicker
+              label="Tags (max. 6)"
               value={form.tags}
               onChange={(values) => handleMultiSelectChange('tags', values)}
-              options={tags.map((tag) => ({ label: tag.name, value: tag.id }))}
+              options={tags.map((tag) => ({ id: tag.id, name: tag.name, color: tag.color }))}
+              max={6}
             />
             <SelectField
               label="Titelbild"
@@ -695,3 +696,53 @@ const CheckboxField = ({ label, checked, onChange }) => (
 );
 
 export default OrganizerEventForm;
+
+// Custom tag picker to avoid Ctrl/Cmd multi-select usability issues
+function TagPicker({ label, value, onChange, options, max = 6 }) {
+  const selected = Array.isArray(value) ? value : [];
+  const toggle = (id) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter((t) => t !== id));
+      return;
+    }
+    if (selected.length >= max) return; // silently ignore beyond limit
+    onChange([...selected, id]);
+  };
+
+  return (
+    <div className="flex flex-col text-sm font-medium text-gray-700">
+      <div className="flex items-baseline justify-between">
+        <span>{label}</span>
+        <span className="text-xs text-gray-500">{selected.length}/{max}</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = selected.includes(opt.id);
+          return (
+            <button
+              type="button"
+              key={opt.id}
+              onClick={() => toggle(opt.id)}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                active
+                  ? 'border-[#7CB92C] bg-[#E8F5D9] text-gray-900'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
+              title={opt.name}
+            >
+              {active && (
+                <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#7CB92C] text-[10px] font-bold text-black">
+                  {selected.indexOf(opt.id) + 1}
+                </span>
+              )}
+              {opt.name}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length >= max && (
+        <p className="mt-1 text-xs text-gray-500">Maximal {max} Tags auswählbar. Reihenfolge = Priorität.</p>
+      )}
+    </div>
+  );
+}
