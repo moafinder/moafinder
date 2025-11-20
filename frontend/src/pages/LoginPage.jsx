@@ -23,6 +23,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resendStatus, setResendStatus] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -129,6 +130,38 @@ const LoginPage = () => {
               >
                 Passwort vergessen?
               </Link>
+              <div className="mt-3 text-xs text-gray-600">
+                Keine Bestätigungsmail erhalten?{' '}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) {
+                      setResendStatus('Bitte gib zuerst deine E‑Mail ein.');
+                      return;
+                    }
+                    try {
+                      setResendStatus('Sende Bestätigung …');
+                      const res = await fetch('/api/users/resend-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ email }),
+                      });
+                      // Always returns success:true to prevent enumeration; show optimistic message
+                      if (res.ok) setResendStatus('Bestätigungsmail gesendet (max. alle 10 Minuten).');
+                      else setResendStatus('Anfrage gesendet. Bitte prüfe dein Postfach.');
+                    } catch {
+                      setResendStatus('Anfrage gesendet. Bitte prüfe dein Postfach.');
+                    }
+                  }}
+                  className="text-[#7CB92C] hover:text-[#5a8b20] underline"
+                >
+                  Erneut senden
+                </button>
+              </div>
+              {resendStatus && (
+                <p className="mt-2 text-xs text-gray-500">{resendStatus}</p>
+              )}
             </div>
           </form>
 
