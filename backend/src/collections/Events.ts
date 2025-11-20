@@ -75,7 +75,9 @@ const Events: CollectionConfig = {
         orgIds = (owned?.docs ?? []).map((o: any) => o.id)
         const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
         if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
-      } catch {}
+      } catch (_ignore) {
+        // noop
+      }
       return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
     },
     delete: async ({ req }: { req: PayloadRequest }) => {
@@ -93,7 +95,9 @@ const Events: CollectionConfig = {
         orgIds = (owned?.docs ?? []).map((o: any) => o.id)
         const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
         if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
-      } catch {}
+      } catch (_ignore) {
+        // noop
+      }
       return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
     },
   },
@@ -364,7 +368,9 @@ const Events: CollectionConfig = {
             if (organizerId) {
               data.organizer = organizerId
             }
-          } catch {}
+          } catch (_ignore) {
+            // noop
+          }
         }
         return data
       },

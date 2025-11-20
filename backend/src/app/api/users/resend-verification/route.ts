@@ -122,9 +122,12 @@ export async function POST(request: Request) {
       html: `<p>Bitte bestätige deine E-Mail-Adresse.</p><p><a href="${verifyUrl}">E-Mail jetzt bestätigen</a></p><p>Dieser Link ist 24 Stunden gültig.</p>`,
     })
   } catch (error) {
-    try { (await getPayload({ config: configPromise })).logger?.error?.(error) } catch {}
+    try {
+      (await getPayload({ config: configPromise })).logger?.error?.(error)
+    } catch (_ignore) {
+      // noop
+    }
   }
 
   return jsonResponse(request, { success: true })
 }
-
