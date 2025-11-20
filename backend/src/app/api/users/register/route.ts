@@ -273,8 +273,13 @@ export async function POST(request: Request) {
         user: { id: 'system-register-verify', role: 'admin' } as any,
       })
 
-      const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
-      const verifyUrl = `${baseUrl}/api/users/verify?token=${encodeURIComponent(rawToken)}`
+      // Build a frontend verification link so it can render a friendly page
+      const corsList = (process.env.CORS_ORIGINS ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+      const frontendBase = corsList[0] || 'https://main.dgfhrurhtm4pa.amplifyapp.com'
+      const verifyUrl = `${frontendBase.replace(/\/$/, '')}/verify-email?token=${encodeURIComponent(rawToken)}`
 
       const lines = [
         'Willkommen bei MoaFinder! Bitte bestätigen Sie Ihre E-Mail-Adresse,',
@@ -289,6 +294,11 @@ export async function POST(request: Request) {
         to: parsed.data.email,
         subject: 'Bitte bestätigen Sie Ihre E-Mail-Adresse',
         text: lines.join('\n'),
+        html: `
+          <p>Willkommen bei MoaFinder! Bitte bestätigen Sie Ihre E-Mail-Adresse, damit Sie Veranstaltungen einstellen können.</p>
+          <p><a href="${verifyUrl}">E-Mail jetzt bestätigen</a></p>
+          <p>Dieser Link ist 24 Stunden gültig.</p>
+        `.replace(/\n\s+/g, '')
       })
 
       if (!emailResult.success) {

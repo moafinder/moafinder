@@ -33,7 +33,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'name', 'role', 'organization'],
+    defaultColumns: ['email', 'name', 'role', 'emailVerified', 'disabled', 'organization'],
   },
   auth: {
     cookies: {
@@ -135,6 +135,11 @@ export const Users: CollectionConfig = {
         {
           name: 'expiresAt',
           type: 'date',
+        },
+        {
+          name: 'lastSentAt',
+          type: 'date',
+          admin: { description: 'Zeitpunkt der letzten Verifikationsmail' },
         },
       ],
     },

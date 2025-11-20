@@ -135,6 +135,10 @@ export interface User {
   emailVerification?: {
     tokenHash?: string | null;
     expiresAt?: string | null;
+    /**
+     * Zeitpunkt der letzten Verifikationsmail
+     */
+    lastSentAt?: string | null;
   };
   name?: string | null;
   role: 'admin' | 'editor' | 'organizer';
@@ -425,6 +429,7 @@ export interface UsersSelect<T extends boolean = true> {
     | {
         tokenHash?: T;
         expiresAt?: T;
+        lastSentAt?: T;
       };
   name?: T;
   role?: T;
