@@ -52,6 +52,18 @@ async function ensurePrototypeTags(payload: Payload) {
   }
 }
 
+// Build CORS/CSRF allowlist. Use env list; in dev also accept Vite dev origins.
+const baseCors = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+if (process.env.NODE_ENV !== 'production') {
+  for (const devOrigin of ['http://localhost:5173', 'http://127.0.0.1:5173']) {
+    if (!baseCors.includes(devOrigin)) baseCors.push(devOrigin)
+  }
+}
+
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET as string,
   sharp,
@@ -86,8 +98,8 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(__dirname, 'payload-types.ts'),
   },
-  cors: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [],
-  csrf: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [],
+  cors: baseCors,
+  csrf: baseCors,
   onInit: async (payload) => {
     try {
       await ensurePrototypeTags(payload)
