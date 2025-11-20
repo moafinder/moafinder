@@ -190,6 +190,7 @@ export async function POST(request: Request) {
         email: parsed.data.email,
         password: parsed.data.password,
         role: ENFORCED_DEFAULT_ROLE,
+        disabled: true, // require email verification before login
       },
     })
   } catch (error) {
@@ -237,11 +238,13 @@ export async function POST(request: Request) {
         })
         const orgId = orgs?.docs?.[0]?.id
         if (orgId) {
+          const safeRole = (createdUser as any)?.role === 'admin' || (createdUser as any)?.role === 'editor' || (createdUser as any)?.role === 'organizer' ? (createdUser as any).role : 'organizer'
           await payload.update({
             collection: 'users',
             id: createdUser.id as string,
-            data: { organization: orgId },
+            data: { organization: orgId, role: safeRole },
             overrideAccess: true,
+            user: { id: 'system-register-org', role: 'admin' } as any,
           })
         }
       } catch (_ignore) {
@@ -257,14 +260,17 @@ export async function POST(request: Request) {
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
       const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() // 24h
 
+      const safeRole = (createdUser as any)?.role === 'admin' || (createdUser as any)?.role === 'editor' || (createdUser as any)?.role === 'organizer' ? (createdUser as any).role : 'organizer'
       await payload.update({
         collection: 'users',
         id: createdUser.id as string,
         data: {
           emailVerified: false,
           emailVerification: { tokenHash, expiresAt },
+          role: safeRole,
         },
         overrideAccess: true,
+        user: { id: 'system-register-verify', role: 'admin' } as any,
       })
 
       const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'

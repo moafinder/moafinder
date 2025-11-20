@@ -37,14 +37,19 @@ export async function GET(request: Request) {
 
     user = found.docs[0]
 
+    const currentRole = (user as any)?.role
+    const safeRole = currentRole === 'admin' || currentRole === 'editor' || currentRole === 'organizer' ? currentRole : 'organizer'
     await payload.update({
       collection: 'users',
       id: user.id as string,
       data: {
         emailVerified: true,
         emailVerification: { tokenHash: null, expiresAt: null },
+        disabled: false,
+        role: safeRole,
       },
       overrideAccess: true,
+      user: { id: 'system-verify-email', role: 'admin' } as any,
     })
   } catch (error) {
     payload.logger.error({ msg: 'Email verification failed', error })
