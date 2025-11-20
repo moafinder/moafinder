@@ -128,6 +128,32 @@ Also seeded for organizer testing:
 
 They’re created by the seed script (e.g. `node scripts/local-stack.mjs up --seed` or `pnpm -C backend run seed`).
 
+### Roles and permissions
+
+The app has three roles: Organizer, Editor, and Admin.
+
+- Organizer
+  - Create, edit, update and delete own Veranstaltungen (events). Submissions are reviewed by Editor/Admin depending on workflow.
+  - Create, edit, update and delete Veranstaltungsorte (locations) that belong to the organizer’s organization.
+  - Manage own organization profile data.
+  - Upload media.
+
+- Editor
+  - Same as Organizer but for the editor’s organization. Editors can also manage organization details.
+  - Create locations and events for their organization; these require Admin approval to be published.
+  - Upload media.
+
+- Admin
+  - Full read/write on all content across organizations.
+  - Approve/reject events and locations.
+  - Manage users and assign them to organizations.
+
+Implementation notes
+
+- Users now have an optional `organization` relationship (admin-editable) so you can see and manage the organization for each user in the user list.
+- Locations have an `owner` relationship to `organizations` (visible in the admin columns). When non-admins create locations, the backend automatically assigns their organization.
+- Events scope access by the requester’s organization(s). Non-admins can only modify events where the `organizer` is their organization. The backend assigns the organizer on create for non-admins.
+
 ### Manual steps
 1. **Install dependencies**
    ```

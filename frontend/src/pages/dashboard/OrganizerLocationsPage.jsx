@@ -52,6 +52,7 @@ const OrganizerLocationsPage = () => {
 
       <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <span className="text-sm text-gray-600">{locations.length} Orte im Verzeichnis</span>
+        <div className="flex items-center gap-3">
         <input
           type="search"
           placeholder="Ort suchen …"
@@ -59,6 +60,8 @@ const OrganizerLocationsPage = () => {
           onChange={(event) => setSearch(event.target.value)}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] md:w-72"
         />
+        <a href="/dashboard/places/new" className="rounded-md bg-[#7CB92C] px-3 py-2 text-sm font-semibold text-black hover:bg-[#5a8b20]">Neuer Ort</a>
+        </div>
       </div>
 
       {loading ? (

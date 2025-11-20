@@ -168,7 +168,7 @@ export async function POST(request: Request) {
   let rawJson: unknown
   try {
     rawJson = await request.json()
-  } catch (error) {
+  } catch (_error) {
     return jsonResponse(request, { errors: [{ message: 'Request body must be valid JSON' }] }, { status: 400 })
   }
 
@@ -227,6 +227,26 @@ export async function POST(request: Request) {
           role: 'organizer',
         },
       })
+      // Set user's organization to the newly created organization
+      try {
+        const orgs = await payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: createdUser.id } } as any,
+          limit: 1,
+          overrideAccess: true,
+        })
+        const orgId = orgs?.docs?.[0]?.id
+        if (orgId) {
+          await payload.update({
+            collection: 'users',
+            id: createdUser.id as string,
+            data: { organization: orgId },
+            overrideAccess: true,
+          })
+        }
+      } catch (_ignore) {
+        // Best-effort assignment; it's fine if this lookup fails during registration
+      }
     } catch (error) {
       payload.logger.error({ msg: 'Failed to create organization for new user', error, userId: createdUser.id })
     }

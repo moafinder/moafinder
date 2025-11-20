@@ -100,13 +100,14 @@ const EditorEventsPage = () => {
   return (
     <div className="space-y-6">
       <header className="space-y-4">
-        <div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <p className="text-sm font-semibold uppercase tracking-wide text-[#7CB92C]">Redaktion</p>
           <h1 className="text-3xl font-bold text-gray-900">Einträge im MoaFinder</h1>
-          <p className="text-sm text-gray-600">
-            Entscheide über neue Veranstaltungen, pflege bestehende Angebote und halte das Archiv aktuell.
-          </p>
+          <a href="/dashboard/events/new" className="inline-flex items-center justify-center rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20]">Neuer Event</a>
         </div>
+        <p className="text-sm text-gray-600">
+          Entscheide über neue Veranstaltungen, pflege bestehende Angebote und halte das Archiv aktuell.
+        </p>
         <div className="flex flex-wrap gap-2">
           {filterOptions.map((option) => (
             <button

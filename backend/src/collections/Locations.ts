@@ -4,7 +4,7 @@ const Locations: CollectionConfig = {
   slug: 'locations',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'shortName', 'address'],
+    defaultColumns: ['name', 'shortName', 'owner', 'address'],
   },
   access: {
     read: () => true,
@@ -13,7 +13,7 @@ const Locations: CollectionConfig = {
       if (!user || user.disabled) return false
       if (user.role === 'admin') return true
 
-      // Allow non-admins to create only if they own at least one organization
+      // Allow non-admins to create only if they belong to at least one organization
       try {
         const owned = await req.payload.find({
           collection: 'organizations',
@@ -21,7 +21,8 @@ const Locations: CollectionConfig = {
           limit: 1,
           overrideAccess: true,
         })
-        return (owned?.totalDocs ?? 0) > 0
+        const memberOrg = user.organization ? 1 : 0
+        return (owned?.totalDocs ?? 0) + memberOrg > 0
       } catch {
         return false
       }
@@ -39,6 +40,8 @@ const Locations: CollectionConfig = {
           overrideAccess: true,
         })
         const ids = (orgs?.docs ?? []).map((o: any) => o.id)
+        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+        if (membershipId && !ids.includes(membershipId)) ids.push(membershipId)
         if (ids.length === 0) return false
         return { owner: { in: ids } } as any
       } catch {
@@ -57,6 +60,8 @@ const Locations: CollectionConfig = {
           overrideAccess: true,
         })
         const ids = (orgs?.docs ?? []).map((o: any) => o.id)
+        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+        if (membershipId && !ids.includes(membershipId)) ids.push(membershipId)
         if (ids.length === 0) return false
         return { owner: { in: ids } } as any
       } catch {
@@ -153,8 +158,10 @@ const Locations: CollectionConfig = {
               overrideAccess: true,
             })
             const orgId = orgs?.docs?.[0]?.id
-            if (orgId) {
-              data.owner = orgId
+            const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+            const candidate = membershipId || orgId
+            if (candidate) {
+              data.owner = candidate
             }
           } catch {
             // ignore

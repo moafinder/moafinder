@@ -51,7 +51,9 @@ const EditorPlaceCreatePage = () => {
           qs = new URLSearchParams({ limit: '200', sort: 'name' }).toString();
         } else if (user?.id) {
           const params = new URLSearchParams();
-          params.set('where[owner][equals]', user.id);
+          // include membership via user.organization and owned orgs
+          if (user.organization) params.append('where[id][equals]', user.organization);
+          params.append('or[0][owner][equals]', user.id);
           params.set('limit', '50');
           qs = params.toString();
         }

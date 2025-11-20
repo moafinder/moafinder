@@ -129,6 +129,7 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  organization?: (string | null) | Organization;
   disabled?: boolean | null;
   emailVerified?: boolean | null;
   emailVerification?: {
@@ -416,6 +417,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  organization?: T;
   disabled?: T;
   emailVerified?: T;
   emailVerification?:

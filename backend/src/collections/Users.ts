@@ -33,6 +33,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
+    defaultColumns: ['email', 'name', 'role', 'organization'],
   },
   auth: {
     cookies: {
@@ -70,6 +71,16 @@ export const Users: CollectionConfig = {
     ],
   },
   fields: [
+    {
+      name: 'organization',
+      label: 'Organisation',
+      type: 'relationship',
+      relationTo: 'organizations',
+      required: false,
+      access: {
+        update: ({ req }) => req.user?.role === 'admin',
+      },
+    },
     {
       name: 'disabled',
       label: 'Zugang deaktiviert',

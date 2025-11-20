@@ -33,7 +33,8 @@ const EditorLocationsPage = () => {
         if (user.role === 'admin') {
           params.set('limit', '200');
         } else {
-          params.set('where[owner][equals]', user.id);
+          if (user.organization) params.append('where[id][equals]', user.organization);
+          params.append('or[0][owner][equals]', user.id);
           params.set('limit', '50');
         }
         const res = await fetch(buildApiUrl(`/api/organizations?${params.toString()}`), {

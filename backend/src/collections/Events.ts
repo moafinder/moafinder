@@ -9,7 +9,7 @@ const Events: CollectionConfig = {
     defaultColumns: ['title', 'startDate', 'location', 'status', 'organizer'],
   },
   access: {
-    read: ({ req }: { req: PayloadRequest }) => {
+    read: async ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       const notExpired = {
         or: [
@@ -18,19 +18,30 @@ const Events: CollectionConfig = {
         ],
       }
       if (!user) {
-        return {
-          and: [{ status: { equals: 'approved' } }, notExpired],
-        } as any
+        return { and: [{ status: { equals: 'approved' } }, notExpired] } as any
       }
-      if (user.role === 'organizer') {
-        return {
-          or: [
-            { and: [{ status: { equals: 'approved' } }, notExpired] },
-            { organizer: { equals: user.id } },
-          ],
-        } as any
+      if (user.role === 'admin') return true
+      // Organizer/Editor: approved or events from their organization(s)
+      let orgIds: string[] = []
+      try {
+        const owned = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 100,
+          overrideAccess: true,
+        })
+        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
+        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
+      } catch {
+        // ignore
       }
-      return true
+      return {
+        or: [
+          { and: [{ status: { equals: 'approved' } }, notExpired] },
+          orgIds.length ? { organizer: { in: orgIds } } : { organizer: { equals: '___never___' } },
+        ],
+      } as any
     },
     create: async ({ req, data }: { req: PayloadRequest; data?: any }) => {
       const user = req.user as any
@@ -49,11 +60,41 @@ const Events: CollectionConfig = {
       // For other statuses (e.g., approved), restrict to editors/admins only (handled above).
       return false
     },
-    update: ({ req }: { req: PayloadRequest }) => {
+    update: async ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false
-      if (user.role === 'admin' || user.role === 'editor') return true
-      return { organizer: { equals: user.id } } as any
+      if (user.role === 'admin') return true
+      let orgIds: string[] = []
+      try {
+        const owned = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 100,
+          overrideAccess: true,
+        })
+        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
+        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
+      } catch {}
+      return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
+    },
+    delete: async ({ req }: { req: PayloadRequest }) => {
+      const { user } = req
+      if (!user) return false
+      if (user.role === 'admin') return true
+      let orgIds: string[] = []
+      try {
+        const owned = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 100,
+          overrideAccess: true,
+        })
+        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
+        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
+        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
+      } catch {}
+      return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
     },
   },
   fields: [
@@ -217,7 +258,6 @@ const Events: CollectionConfig = {
       relationTo: 'organizations',
       required: true,
       label: 'Veranstalter',
-      defaultValue: ({ user }: { user: PayloadRequest['user'] }) => user?.id,
       access: {
         update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
       },
@@ -297,6 +337,30 @@ const Events: CollectionConfig = {
           if (baseDate) {
             data.expiryDate = baseDate
           }
+        }
+        return data
+      },
+    ],
+    beforeChange: [
+      async ({ data, req, operation }) => {
+        const user = req.user as any
+        if (!user) return data
+        if (operation === 'create' && user.role !== 'admin') {
+          try {
+            let organizerId = user.organization as string | undefined
+            if (!organizerId) {
+              const owned = await req.payload.find({
+                collection: 'organizations',
+                where: { owner: { equals: user.id } } as any,
+                limit: 1,
+                overrideAccess: true,
+              })
+              organizerId = owned?.docs?.[0]?.id
+            }
+            if (organizerId) {
+              data.organizer = organizerId
+            }
+          } catch {}
         }
         return data
       },

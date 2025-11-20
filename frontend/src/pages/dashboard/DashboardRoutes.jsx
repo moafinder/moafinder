@@ -35,6 +35,8 @@ const DashboardRoutes = () => {
         <Route path="events/:id/edit" element={<OrganizerEventEditPage />} />
         <Route path="media" element={<OrganizerMediaPage />} />
         <Route path="places" element={<OrganizerLocationsPage />} />
+        <Route path="places/new" element={<EditorPlaceCreatePage />} />
+        <Route path="places/:id/edit" element={<EditorPlaceEditPage />} />
         <Route path="archive" element={<OrganizerArchivePage />} />
         <Route path="guidelines" element={<OrganizerGuidelinesPage />} />
         <Route
