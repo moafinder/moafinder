@@ -17,6 +17,10 @@ const configuredOrigins = new Set(
 if (process.env.PAYLOAD_PUBLIC_SERVER_URL) configuredOrigins.add(process.env.PAYLOAD_PUBLIC_SERVER_URL)
 configuredOrigins.add('http://localhost:3000')
 configuredOrigins.add('http://127.0.0.1:3000')
+if (process.env.NODE_ENV !== 'production') {
+  configuredOrigins.add('http://localhost:5173')
+  configuredOrigins.add('http://127.0.0.1:5173')
+}
 
 function applyCorsHeaders(request: Request, headers: Headers, includePreflight = false) {
   const origin = request.headers.get('origin')

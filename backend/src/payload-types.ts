@@ -274,6 +274,10 @@ export interface Event {
  */
 export interface Location {
   id: string;
+  /**
+   * Organisation, der dieser Ort gehört. Wird bei Nicht-Admins automatisch gesetzt.
+   */
+  owner: string | Organization;
   name: string;
   /**
    * Erscheint im Filtermenü und in der Karte
@@ -519,6 +523,7 @@ export interface EventsSelect<T extends boolean = true> {
  * via the `definition` "locations_select".
  */
 export interface LocationsSelect<T extends boolean = true> {
+  owner?: T;
   name?: T;
   shortName?: T;
   description?: T;

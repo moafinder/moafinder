@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { listLocations } from '../../api/locations';
+import { listLocations, deleteLocation } from '../../api/locations';
+import { useAuth } from '../../context/AuthContext';
+import { buildApiUrl } from '../../api/baseUrl';
+import { withAuthHeaders } from '../../utils/authHeaders';
 
 const EditorLocationsPage = () => {
+  const { user } = useAuth();
   const [locations, setLocations] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -21,11 +26,32 @@ const EditorLocationsPage = () => {
         if (mounted) setLoading(false);
       }
     };
+    const loadOrgs = async () => {
+      try {
+        if (!user?.id) return;
+        const params = new URLSearchParams();
+        if (user.role === 'admin') {
+          params.set('limit', '200');
+        } else {
+          params.set('where[owner][equals]', user.id);
+          params.set('limit', '50');
+        }
+        const res = await fetch(buildApiUrl(`/api/organizations?${params.toString()}`), {
+          credentials: 'include',
+          headers: withAuthHeaders(),
+        });
+        const payload = await res.json();
+        if (mounted) setOrganizations(Array.isArray(payload?.docs) ? payload.docs : []);
+      } catch {
+        if (mounted) setOrganizations([]);
+      }
+    };
     load();
+    loadOrgs();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [user]);
 
   const filtered = useMemo(() => {
     if (!search) return locations;
@@ -34,6 +60,20 @@ const EditorLocationsPage = () => {
       return haystack.includes(search.toLowerCase());
     });
   }, [locations, search]);
+
+  const handleDelete = async (id) => {
+    const myOrgIds = organizations.map((o) => o.id);
+    const target = locations.find((l) => l.id === id);
+    const isOwner = target?.owner && myOrgIds.includes(typeof target.owner === 'object' ? target.owner.id : target.owner);
+    if (!(user?.role === 'admin' || isOwner)) return;
+    if (!window.confirm('Diesen Ort wirklich löschen?')) return;
+    try {
+      await deleteLocation(id);
+      setLocations((prev) => prev.filter((l) => l.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -72,8 +112,48 @@ const EditorLocationsPage = () => {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((location) => (
             <article key={location.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900">{location.name}</h2>
-              <p className="text-sm text-gray-600">{location.shortName}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">{location.name}</h2>
+                  <p className="text-sm text-gray-600">{location.shortName}</p>
+                </div>
+                {(() => {
+                  const myOrgIds = organizations.map((o) => o.id)
+                  const ownerId = typeof location.owner === 'object' ? location.owner?.id : location.owner
+                  const isOwner = ownerId && myOrgIds.includes(ownerId)
+                  const canEdit = user?.role === 'admin' || isOwner
+                  return (
+                    <div className="flex items-center gap-2">
+                      {canEdit && (
+                        <a
+                          href={`/dashboard/editor/places/${location.id}/edit`}
+                          className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          Bearbeiten
+                        </a>
+                      )}
+                      {(user?.role === 'admin' || isOwner) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(location.id)}
+                          className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        >
+                          Löschen
+                        </button>
+                      )}
+                      {user?.role === 'admin' && (
+                        <a
+                          href={`/admin/collections/locations/${location.id}`}
+                          className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                          target="_blank" rel="noopener noreferrer"
+                        >
+                          Im Admin öffnen
+                        </a>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
               <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{location.description ?? 'Keine Beschreibung hinterlegt.'}</p>
               {location.address && (
                 <p className="mt-2 text-sm text-gray-600">

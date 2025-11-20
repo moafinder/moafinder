@@ -107,6 +107,7 @@ describe('Content workflow', () => {
       collection: 'locations',
       overrideAccess: true,
       data: {
+        owner: organization.id,
         name: 'Test Location',
         shortName: 'TestOrt',
         description: 'Ort für Tests',

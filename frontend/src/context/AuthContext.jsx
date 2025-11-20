@@ -54,15 +54,25 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = async () => {
-    await fetch(buildApiUrl('/api/users/logout'), {
-      method: 'POST',
-      credentials: 'include',
-      headers: withAuthHeaders(),
-    })
-    setUser(null)
-    setToken(null)
-    localStorage.removeItem('user')
-    localStorage.removeItem('authToken')
+    try {
+      await fetch(buildApiUrl('/api/users/logout'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: withAuthHeaders(),
+      })
+    } catch (err) {
+      // Network/CORS errors should not prevent local sign-out
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Logout request failed; clearing local session anyway.', err)
+      }
+    } finally {
+      try {
+        localStorage.removeItem('user')
+        localStorage.removeItem('authToken')
+      } catch {/* ignore */}
+      setUser(null)
+      setToken(null)
+    }
   }
 
   return <AuthContext.Provider value={{ user, token, login, logout, initializing }}>{children}</AuthContext.Provider>

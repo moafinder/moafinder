@@ -77,3 +77,17 @@ export async function updateLocation(id, data) {
   }
   return response.json();
 }
+
+export async function deleteLocation(id) {
+  if (!id) throw new Error('Es muss eine Orts-ID angegeben werden.');
+  const response = await fetch(buildApiUrl(`/api/locations/${id}`), {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: withAuthHeaders(),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Ort konnte nicht gelöscht werden.');
+  }
+  return true;
+}

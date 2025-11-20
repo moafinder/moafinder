@@ -278,6 +278,10 @@ async function seed() {
 
   const locations = await Promise.all([
     ensureLocation(payload, {
+      // Assign owner to the seeded organization so validation passes
+      // and org-based access rules apply correctly
+      // @ts-ignore
+      owner: organization.id,
       name: 'Stephans – Der Nachbarschaftsladen',
       shortName: 'Stephans',
       description:
@@ -292,6 +296,8 @@ async function seed() {
       openingHours: 'Mo–Fr 10:00–18:00 Uhr',
     }),
     ensureLocation(payload, {
+      // @ts-ignore
+      owner: organization.id,
       name: 'Stadtschloss Moabit',
       shortName: 'Stadtschloss',
       description:

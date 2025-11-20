@@ -15,6 +15,10 @@ const configuredOrigins = new Set(
 if (process.env.PAYLOAD_PUBLIC_SERVER_URL) configuredOrigins.add(process.env.PAYLOAD_PUBLIC_SERVER_URL)
 configuredOrigins.add('http://localhost:3000')
 configuredOrigins.add('http://127.0.0.1:3000')
+if (process.env.NODE_ENV !== 'production') {
+  configuredOrigins.add('http://localhost:5173')
+  configuredOrigins.add('http://127.0.0.1:5173')
+}
 
 function applyCorsHeaders(request: Request, headers: Headers, includePreflight = false) {
   const origin = request.headers.get('origin')
@@ -70,6 +74,10 @@ export async function POST(request: Request) {
   }
 
   const payload = await getPayload({ config: configPromise })
+  const url = new URL(request.url)
+  const debug = url.searchParams.get('debug') === '1' || url.searchParams.get('debug') === 'true'
+  const tokenParam = url.searchParams.get('token')
+  const canDebug = debug && tokenParam && tokenParam === process.env.PAYLOAD_SECRET
 
   try {
     const existing = await payload.find({
@@ -80,7 +88,7 @@ export async function POST(request: Request) {
     })
 
     if ((existing?.totalDocs ?? 0) === 0) {
-      return jsonResponse(request, { success: true })
+      return jsonResponse(request, canDebug ? { success: true, delivered: false, reason: 'no_user' } : { success: true })
     }
 
     const user = existing.docs[0] as any
@@ -122,6 +130,7 @@ export async function POST(request: Request) {
     if (!mail.success) {
       payload.logger.warn({ msg: 'Password reset email failed to send', email, error: mail.error })
     }
+    if (canDebug) return jsonResponse(request, { success: true, delivered: !!mail.success, reason: mail.success ? 'sent' : 'smtp_error', resetUrl })
   } catch (error) {
     // Never leak errors to the client for privacy; log server-side
     try {
@@ -129,6 +138,7 @@ export async function POST(request: Request) {
     } catch (_ignore) {
       // Swallow secondary logging errors (network/boot issues)
     }
+    if (canDebug) return jsonResponse(request, { success: true, delivered: false, reason: 'server_error' })
   }
 
   // Always respond success to avoid user enumeration

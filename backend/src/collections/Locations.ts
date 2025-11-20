@@ -8,13 +8,73 @@ const Locations: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req }: { req: PayloadRequest }) =>
-      req.user?.role === 'editor' || req.user?.role === 'admin',
-    update: ({ req }: { req: PayloadRequest }) =>
-      req.user?.role === 'editor' || req.user?.role === 'admin',
-    delete: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
+    create: async ({ req }: { req: PayloadRequest }) => {
+      const user = req.user as any
+      if (!user || user.disabled) return false
+      if (user.role === 'admin') return true
+
+      // Allow non-admins to create only if they own at least one organization
+      try {
+        const owned = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 1,
+          overrideAccess: true,
+        })
+        return (owned?.totalDocs ?? 0) > 0
+      } catch {
+        return false
+      }
+    },
+    update: async ({ req }: { req: PayloadRequest }) => {
+      const user = req.user as any
+      if (!user) return false
+      if (user.role === 'admin') return true
+      // Editors/Organizers may update only their own locations
+      try {
+        const orgs = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 100,
+          overrideAccess: true,
+        })
+        const ids = (orgs?.docs ?? []).map((o: any) => o.id)
+        if (ids.length === 0) return false
+        return { owner: { in: ids } } as any
+      } catch {
+        return false
+      }
+    },
+    delete: async ({ req }: { req: PayloadRequest }) => {
+      const user = req.user as any
+      if (!user) return false
+      if (user.role === 'admin') return true
+      try {
+        const orgs = await req.payload.find({
+          collection: 'organizations',
+          where: { owner: { equals: user.id } } as any,
+          limit: 100,
+          overrideAccess: true,
+        })
+        const ids = (orgs?.docs ?? []).map((o: any) => o.id)
+        if (ids.length === 0) return false
+        return { owner: { in: ids } } as any
+      } catch {
+        return false
+      }
+    },
   },
   fields: [
+    {
+      name: 'owner',
+      type: 'relationship',
+      relationTo: 'organizations',
+      label: 'Besitzende Organisation',
+      required: true,
+      admin: {
+        description: 'Organisation, der dieser Ort gehört. Wird bei Nicht-Admins automatisch gesetzt.',
+      },
+    },
     {
       name: 'name',
       type: 'text',
@@ -77,6 +137,39 @@ const Locations: CollectionConfig = {
       label: 'Öffnungszeiten',
     },
   ],
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation }) => {
+        const user = req.user as any
+        if (!user) return data
+
+        if (operation === 'create' && user.role !== 'admin') {
+          // Force owner to one of the user's organizations
+          try {
+            const orgs = await req.payload.find({
+              collection: 'organizations',
+              where: { owner: { equals: user.id } } as any,
+              limit: 1,
+              overrideAccess: true,
+            })
+            const orgId = orgs?.docs?.[0]?.id
+            if (orgId) {
+              data.owner = orgId
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        // When non-admin updating, prevent owner re-assignment
+        if (operation === 'update' && user.role !== 'admin') {
+          if (data && 'owner' in data) delete (data as any).owner
+        }
+
+        return data
+      },
+    ],
+  },
   timestamps: true,
 }
 
