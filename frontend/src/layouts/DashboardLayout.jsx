@@ -21,6 +21,8 @@ const organizerSidebar = [
 
 const editorSidebar = [
   { label: 'Veranstaltungsorte', to: '/dashboard/editor/places' },
+  { label: 'Neuer Veranstaltungsort', to: '/dashboard/editor/places/new' },
+  { label: 'Profil der Organisation', to: '/dashboard/organization' },
   { label: 'Profile der Organisationen', to: '/dashboard/editor/organizations' },
   { label: 'Angebote/Veranstaltungen', to: '/dashboard/editor/events' },
   { label: 'Event-Bilder', to: '/dashboard/editor/media' },
@@ -29,7 +31,20 @@ const editorSidebar = [
   { label: 'Passwort ändern', to: '/dashboard/password' },
 ];
 
+// Admins see all editorial + organizer items, plus admin tools
 const adminSidebar = [
+  // Editorial tools
+  { label: 'Veranstaltungsorte', to: '/dashboard/editor/places' },
+  { label: 'Neuer Veranstaltungsort', to: '/dashboard/editor/places/new' },
+  { label: 'Profile der Organisationen', to: '/dashboard/editor/organizations' },
+  { label: 'Angebote/Veranstaltungen', to: '/dashboard/editor/events' },
+  { label: 'Event-Bilder', to: '/dashboard/editor/media' },
+  { label: 'Regelkatalog', to: '/dashboard/editor/guidelines' },
+  { label: 'Archiv', to: '/dashboard/editor/archive' },
+  // Organizer self-service
+  { label: 'Profil der Organisation', to: '/dashboard/organization' },
+  { label: 'Angebote/Veranstaltungen (eigene)', to: '/dashboard/events' },
+  // Admin tools
   { label: 'Systemübersicht', to: '/dashboard/admin' },
   { label: 'Benutzerverwaltung', to: '/dashboard/admin/users' },
   { label: 'Einstellungen', to: '/dashboard/admin/settings' },
@@ -56,7 +71,9 @@ const DashboardLayout = ({ children }) => {
       <header className="bg-black text-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center space-x-8">
-            <span className="text-lg font-semibold tracking-tight">MoaFinder</span>
+            <NavLink to="/formate" className="text-lg font-semibold tracking-tight hover:text-[#7CB92C]">
+              MoaFinder
+            </NavLink>
             <nav className="hidden space-x-6 md:flex">
               {primaryNav.filter((item) => canSee(item.role)).map((item) => (
                 <NavLink
