@@ -96,14 +96,22 @@ export async function POST(request: Request) {
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() // 24h
 
+    // Ensure we never write an empty/invalid role when backfilling legacy users
+    const currentRole = (user as any)?.role
+    const safeRole = currentRole === 'admin' || currentRole === 'editor' || currentRole === 'organizer' ? currentRole : 'organizer'
+
     await payload.update({
       collection: 'users',
       id: user.id,
       data: {
         resetPasswordToken: tokenHash,
         resetPasswordExpiration: expiresAt,
+        // Backfill role for legacy users that may lack one to avoid required-field validation
+        role: safeRole,
       },
       overrideAccess: true,
+      // Provide a system admin user so collection hooks treat this as an admin update
+      user: { id: 'system-forgot-password', role: 'admin' } as any,
     })
 
     const corsList = (process.env.CORS_ORIGINS ?? '')

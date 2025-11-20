@@ -17,7 +17,8 @@
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" pnpm exec playwright test",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
     "predeploy:check": "node ./scripts/predeploy-check.mjs",
-    "seed": "tsx ./scripts/seed-demo-data.ts"
+    "seed": "tsx ./scripts/seed-demo-data.ts",
+    "backfill:roles": "tsx ./scripts/backfill-user-roles.ts"
   },
   "dependencies": {
     "@payloadcms/db-mongodb": "^3.59.1",

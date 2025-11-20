@@ -96,6 +96,8 @@ export async function POST(request: Request) {
     }
 
     const user = result.docs[0] as any
+    const currentRole = (user as any)?.role
+    const safeRole = currentRole === 'admin' || currentRole === 'editor' || currentRole === 'organizer' ? currentRole : 'organizer'
 
     await payload.update({
       collection: 'users',
@@ -104,8 +106,10 @@ export async function POST(request: Request) {
         password,
         resetPasswordToken: null,
         resetPasswordExpiration: null,
+        role: safeRole,
       },
       overrideAccess: true,
+      user: { id: 'system-reset-password', role: 'admin' } as any,
     })
 
     return jsonResponse(request, { success: true })

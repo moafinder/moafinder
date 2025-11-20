@@ -42,8 +42,23 @@ export const Users: CollectionConfig = {
     },
   },
   hooks: {
+    beforeValidate: [
+      ({ data, operation, originalDoc }) => {
+        // Backfill role for legacy users that were created before the role field existed.
+        // Without this, updating auth-managed fields (e.g., resetPasswordToken) could fail
+        // validation with "Role is required" for those legacy docs.
+        if (operation === 'update') {
+          const hasIncomingRole = data && Object.prototype.hasOwnProperty.call(data, 'role')
+          const existingRole = (originalDoc as any)?.role
+          if (!hasIncomingRole && (existingRole === undefined || existingRole === null || existingRole === '')) {
+            ;(data as any).role = ENFORCED_DEFAULT_ROLE
+          }
+        }
+        return data
+      },
+    ],
     beforeChange: [
-      ({ data, req, operation }) => {
+      ({ data, req, operation, originalDoc }) => {
         if (!data) return data
 
         if (operation === 'create') {
@@ -56,7 +71,16 @@ export const Users: CollectionConfig = {
             data.role = ENFORCED_DEFAULT_ROLE
           }
         } else if (operation === 'update' && req.user?.role !== 'admin') {
-          delete data.role
+          // Non-admins cannot change role, but legacy users may have no role stored.
+          // If incoming update tries to set role, drop it.
+          if ('role' in data) {
+            delete (data as any).role
+          }
+          // If the existing document has no role at all, set a default so validation passes.
+          const existingRole = (originalDoc as any)?.role
+          if (existingRole === undefined || existingRole === null || existingRole === '') {
+            ;(data as any).role = ENFORCED_DEFAULT_ROLE
+          }
         }
 
         // Enforce strong password if present (create or update)
