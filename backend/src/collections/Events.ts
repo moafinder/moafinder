@@ -345,6 +345,10 @@ const Events: CollectionConfig = {
       async ({ data, req, operation }) => {
         const user = req.user as any
         if (!user) return data
+        // Normalize recurrence: Payload expects a group object, not null
+        if (data && 'recurrence' in (data as any) && (data as any).recurrence === null) {
+          ;(data as any).recurrence = {}
+        }
         if (operation === 'create' && user.role !== 'admin') {
           try {
             let organizerId = user.organization as string | undefined

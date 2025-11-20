@@ -284,7 +284,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       }
 
       const recurrencePayload = (() => {
-        if (form.eventType === 'einmalig') return null;
+        if (form.eventType === 'einmalig') return {};
         const base = { repeatUntil: form.lastDate || null };
         if (form.eventType === 'wöchentlich') {
           return { ...base, daysOfWeek: form.recurrenceDays };
