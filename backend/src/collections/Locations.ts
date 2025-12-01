@@ -11,7 +11,7 @@ const Locations: CollectionConfig = {
     create: async ({ req }: { req: PayloadRequest }) => {
       const user = req.user as any
       if (!user || user.disabled) return false
-      if (user.role === 'admin') return true
+      if (user.role === 'admin' || user.role === 'editor') return true
 
       // Allow non-admins to create only if they belong to at least one organization
       try {
@@ -21,8 +21,10 @@ const Locations: CollectionConfig = {
           limit: 1,
           overrideAccess: true,
         })
-        const memberOrg = user.organization ? 1 : 0
-        return (owned?.totalDocs ?? 0) + memberOrg > 0
+        // Check user's organization membership (handle both object and ID reference)
+        const membershipId = typeof user.organization === 'object' ? user.organization?.id : user.organization
+        const hasMembership = membershipId ? 1 : 0
+        return (owned?.totalDocs ?? 0) + hasMembership > 0
       } catch {
         return false
       }
