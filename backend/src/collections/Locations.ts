@@ -143,6 +143,22 @@ const Locations: CollectionConfig = {
       type: 'text',
       label: 'Öffnungszeiten',
     },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'E-Mail',
+      admin: {
+        description: 'Kontakt-E-Mail für diesen Ort',
+      },
+    },
+    {
+      name: 'homepage',
+      type: 'text',
+      label: 'Webseite',
+      admin: {
+        description: 'URL der Webseite (z.B. https://example.com)',
+      },
+    },
   ],
   hooks: {
     beforeChange: [

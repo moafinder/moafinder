@@ -39,6 +39,8 @@ export function adaptLocation(doc) {
     coordinates,
     mapPosition,
     openingHours = '',
+    email = '',
+    homepage = '',
   } = doc;
 
   const adaptedImage =
@@ -85,6 +87,8 @@ export function adaptLocation(doc) {
     coordinates: latitude != null && longitude != null ? { lat: latitude, lng: longitude } : null,
     mapPosition: position,
     openingHours,
+    email,
+    homepage,
     raw: doc,
   };
 }

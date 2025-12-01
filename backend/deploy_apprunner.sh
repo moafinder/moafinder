@@ -33,6 +33,7 @@ cd "${SCRIPT_DIR}"
 TARGET=""
 ENV_FILE=""
 SKIP_APPLY="false"
+PROFILE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -49,6 +50,11 @@ while [[ $# -gt 0 ]]; do
     --skip-apply)
       SKIP_APPLY="true"
       shift
+      ;;
+    --profile|-p)
+      [[ $# -ge 2 ]] || { echo "--profile requires a value" >&2; exit 1; }
+      PROFILE="$2"
+      shift 2
       ;;
     --help|-h)
       cat <<'EOF'
@@ -74,6 +80,14 @@ done
 TARGET="${TARGET:-production}"
 ENV_FILE="${ENV_FILE:-../env/out/${TARGET}-apprunner.env}"
 
+# Apply AWS profile if provided (or if already present in environment)
+if [[ -n "$PROFILE" ]]; then
+  export AWS_PROFILE="$PROFILE"
+  echo "Using AWS profile: $AWS_PROFILE"
+elif [[ -n "$AWS_PROFILE" ]]; then
+  echo "Using AWS profile from environment: $AWS_PROFILE"
+fi
+
 if [[ "$SKIP_APPLY" != "true" ]]; then
   if [[ -f ../scripts/apply-env.mjs ]]; then
     command -v node >/dev/null 2>&1 || { echo "node is required to render env targets" >&2; exit 1; }
@@ -95,6 +109,7 @@ export AWS_PAGER=""
 AWS_REGION="${AWS_REGION:-eu-central-1}"
 ACCOUNT_ID="${ACCOUNT_ID:-913283587816}"
 REPO="${REPO:-moabit-backend}"
+# ECR_URI is recomputed AFTER env file loading below to allow overrides from env/out/<target>-apprunner.env
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}"
 SERVICE_ARN="${SERVICE_ARN:-arn:aws:apprunner:${AWS_REGION}:${ACCOUNT_ID}:service/moabit-backend/1983a4b57c44498eb5a626353e4d0ecf}"  # <— change if your ARN differs
 AMPLIFY_URL="${AMPLIFY_URL:-https://main.dgfhrurhtm4pa.amplifyapp.com}"  # only used for CORS
@@ -176,6 +191,13 @@ if [[ -z "${PAYLOAD_SECRET_SECRET_ARN}" ]]; then
 else
   echo "Using Secrets Manager ARN for PAYLOAD_SECRET"
 fi
+
+# Recompute ECR URI (and honor overrides from env file)
+AWS_REGION="${AWS_REGION:-eu-central-1}"
+ACCOUNT_ID="${ACCOUNT_ID}"
+REPO="${REPO:-moabit-backend}"
+ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}"
+echo "Deploying to account ${ACCOUNT_ID} in ${AWS_REGION}; ECR: ${ECR_URI}"
 
 PORT_VALUE="${PORT:-${APP_PORT}}"
 APP_PORT="${PORT_VALUE}"

@@ -155,6 +155,30 @@ const PlaceProfile = () => {
               <p className="text-gray-700 whitespace-pre-line">{place.openingHours}</p>
             </div>
           )}
+          {(place.email || place.homepage) && (
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Kontakt</h2>
+              {place.email && (
+                <p>
+                  <a href={`mailto:${place.email}`} className="text-[#7CB92C] hover:underline">
+                    {place.email}
+                  </a>
+                </p>
+              )}
+              {place.homepage && (
+                <p>
+                  <a
+                    href={place.homepage.startsWith('http') ? place.homepage : `https://${place.homepage}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#7CB92C] hover:underline"
+                  >
+                    {place.homepage.replace(/^https?:\/\//, '')}
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

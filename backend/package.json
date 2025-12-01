@@ -28,6 +28,7 @@
     "@payloadcms/richtext-lexical": "^3.59.1",
     "@payloadcms/ui": "^3.59.1",
     "cross-env": "^7.0.3",
+    "csv-parse": "^6.1.0",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
     "mongodb": "^6.20.0",
