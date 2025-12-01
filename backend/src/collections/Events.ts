@@ -307,6 +307,7 @@ const Events: CollectionConfig = {
         { label: 'Entwurf', value: 'draft' },
         { label: 'Ausstehend', value: 'pending' },
         { label: 'Freigegeben', value: 'approved' },
+        { label: 'Abgelehnt', value: 'rejected' },
         { label: 'Archiviert', value: 'archived' },
       ],
       access: {
