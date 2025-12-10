@@ -1,14 +1,69 @@
 import crypto from 'crypto'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import { NextResponse } from 'next/server'
+
+const ALLOWED_METHODS = 'GET,OPTIONS'
+const DEFAULT_ALLOWED_HEADERS = 'Content-Type,Authorization,Payload-CSRF-Token'
+
+const configuredOrigins = new Set(
+  (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
+)
+if (process.env.PAYLOAD_PUBLIC_SERVER_URL) configuredOrigins.add(process.env.PAYLOAD_PUBLIC_SERVER_URL)
+configuredOrigins.add('http://localhost:3000')
+configuredOrigins.add('http://127.0.0.1:3000')
+if (process.env.NODE_ENV !== 'production') {
+  configuredOrigins.add('http://localhost:5173')
+  configuredOrigins.add('http://127.0.0.1:5173')
+}
+
+function applyCorsHeaders(request: Request, headers: Headers, includePreflight = false) {
+  const origin = request.headers.get('origin')
+  if (!origin) {
+    if (includePreflight) {
+      headers.set('Access-Control-Allow-Methods', ALLOWED_METHODS)
+      headers.set('Access-Control-Allow-Headers', DEFAULT_ALLOWED_HEADERS)
+      headers.set('Access-Control-Max-Age', '600')
+    }
+    return { allowed: true }
+  }
+  const allowed = configuredOrigins.size === 0 || configuredOrigins.has(origin)
+  if (!allowed) return { allowed: false }
+  headers.set('Access-Control-Allow-Origin', origin)
+  headers.set('Access-Control-Allow-Credentials', 'true')
+  headers.append('Vary', 'Origin')
+  if (includePreflight) {
+    headers.set('Access-Control-Allow-Methods', ALLOWED_METHODS)
+    headers.set('Access-Control-Allow-Headers', request.headers.get('access-control-request-headers') ?? DEFAULT_ALLOWED_HEADERS)
+    headers.set('Access-Control-Max-Age', '600')
+  }
+  return { allowed: true }
+}
+
+function jsonResponse<T>(request: Request, body: T, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers)
+  headers.set('Content-Type', 'application/json')
+  const { allowed } = applyCorsHeaders(request, headers)
+  if (!allowed) {
+    return new Response(JSON.stringify({ errors: [{ message: 'Origin not allowed' }] }), { status: 403, headers })
+  }
+  return new Response(JSON.stringify(body), { ...init, headers })
+}
+
+export async function OPTIONS(request: Request) {
+  const headers = new Headers()
+  const { allowed } = applyCorsHeaders(request, headers, true)
+  return new Response(null, { status: allowed ? 204 : 403, headers })
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const token = url.searchParams.get('token')
 
   if (!token) {
-    return NextResponse.json({ error: 'Verification token is required.' }, { status: 400 })
+    return jsonResponse(request, { error: 'Verification token is required.' }, { status: 400 })
   }
 
   const hash = crypto.createHash('sha256').update(token).digest('hex')
@@ -29,7 +84,7 @@ export async function GET(request: Request) {
     })
 
     if (!found || found.totalDocs === 0) {
-      return NextResponse.json(
+      return jsonResponse(request,
         { error: 'Invalid or expired verification token.' },
         { status: 400 },
       )
@@ -53,8 +108,8 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     payload.logger.error({ msg: 'Email verification failed', error })
-    return NextResponse.json({ error: 'Verification failed.' }, { status: 500 })
+    return jsonResponse(request, { error: 'Verification failed.' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return jsonResponse(request, { success: true })
 }
