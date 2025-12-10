@@ -18,19 +18,30 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from ? location.state.from : '/dashboard';
+  const successMessage = location.state?.message || '';
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [resendStatus, setResendStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Clear the success message from history state to prevent re-showing on refresh
+  React.useEffect(() => {
+    if (location.state?.message) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state?.message]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
     if (!email || !password) {
       setError('Bitte geben Sie Ihre Zugangsdaten ein.');
+      setIsSubmitting(false);
       return;
     }
 
@@ -38,7 +49,14 @@ const LoginPage = () => {
       await login(email, password);
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError('Login fehlgeschlagen');
+      const errorMessage = err instanceof Error ? err.message : 'Login fehlgeschlagen';
+      if (errorMessage.includes('verify') || errorMessage.includes('Verify')) {
+        setError('Bitte bestätige zuerst deine E-Mail-Adresse. Prüfe dein Postfach.');
+      } else {
+        setError('Login fehlgeschlagen. Überprüfe deine Zugangsdaten.');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -47,9 +65,19 @@ const LoginPage = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
           {/* Title */}
-          <h1 className="text-3xl font-bold mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-4 text-center">
             Login für Veranstalter*innen
           </h1>
+
+          {/* Success Message from Password Reset */}
+          {successMessage && (
+            <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {successMessage}
+            </div>
+          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -117,9 +145,20 @@ const LoginPage = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-[#7CB92C] text-white font-bold py-3 px-4 rounded-md hover:bg-[#5a8b20] transition-all duration-300 transform hover:scale-[1.02]"
+              disabled={isSubmitting}
+              className="w-full bg-[#7CB92C] text-white font-bold py-3 px-4 rounded-md hover:bg-[#5a8b20] transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Login
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Anmeldung läuft …
+                </span>
+              ) : (
+                'Login'
+              )}
             </button>
 
             {/* Password Recovery Link */}

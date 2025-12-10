@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFacebookF,
   faInstagram,
-  faTwitter,
 } from '@fortawesome/free-brands-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import pigeonWhite from '../assets/pigeon_white.png';
@@ -76,14 +75,12 @@ const Footer = () => {
           <div>
             <h2 className="text-lg font-semibold mb-2">Folgen Sie uns</h2>
             <div className="flex space-x-4 text-lg">
-              <a href="https://facebook.com" aria-label="Facebook" className="text-gray-700 hover:text-brand">
-                <FontAwesomeIcon icon={faFacebookF} />
-              </a>
-              <a href="https://instagram.com" aria-label="Instagram" className="text-gray-700 hover:text-brand">
+              {/* TODO: Update with actual MoaFinder social media profile URLs */}
+              <a href="https://www.instagram.com/moabit.world/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-700 hover:text-brand">
                 <FontAwesomeIcon icon={faInstagram} />
               </a>
-              <a href="https://twitter.com" aria-label="Twitter" className="text-gray-700 hover:text-brand">
-                <FontAwesomeIcon icon={faTwitter} />
+              <a href="https://www.facebook.com/moabit.world/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-700 hover:text-brand">
+                <FontAwesomeIcon icon={faFacebookF} />
               </a>
             </div>
             <p className="mt-4 text-xs">
@@ -127,12 +124,18 @@ const Footer = () => {
       </div>
 
       {/* Bottom row with legal links - black background */}
-      <div className="bg-black border-t border-gray-700 py-2 text-center text-xs">
-        <Link to="/datenschutz" className="footer-link">Datenschutz</Link>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <Link to="/impressum" className="footer-link">Impressum</Link>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <a href="mailto:moafinder@moabit.world" className="footer-link">moafinder@moabit.world</a>
+      <div className="bg-black border-t border-gray-700 py-3 text-center text-xs">
+        <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1">
+          <Link to="/datenschutz" className="footer-link">Datenschutz</Link>
+          <span className="text-gray-500">|</span>
+          <Link to="/impressum" className="footer-link">Impressum</Link>
+          <span className="text-gray-500">|</span>
+          <a href="mailto:moafinder@moabit.world" className="footer-link">moafinder@moabit.world</a>
+          <span className="text-gray-500">|</span>
+          <span className="text-gray-400 flex items-center gap-1">
+            <span role="img" aria-label="Sprache">🇩🇪</span> Diese Seite ist nur auf Deutsch verfügbar
+          </span>
+        </div>
       </div>
     </footer>
   );
