@@ -61,9 +61,9 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
 
   // Calculate map positions from GPS coordinates or use existing mapPosition
   const markerPlaces = useMemo(() => {
-    return sortedPlaces
+    const results = sortedPlaces
       .map((place) => {
-        // If mapPosition is already set, use it
+        // If mapPosition is already set with valid values, use it
         if (place.mapPosition?.x != null && place.mapPosition?.y != null) {
           return { ...place, calculatedPosition: place.mapPosition };
         }
@@ -77,6 +77,19 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
         return null;
       })
       .filter(Boolean);
+    
+    // Debug: log how many places have positions
+    console.log(`MapView: ${results.length}/${sortedPlaces.length} places have map positions`);
+    if (results.length < sortedPlaces.length) {
+      const missing = sortedPlaces.filter(p => !results.find(r => r.id === p.id));
+      console.log('Places without positions:', missing.map(p => ({
+        name: p.shortName || p.name,
+        coords: p.coordinates,
+        mapPos: p.mapPosition
+      })));
+    }
+    
+    return results;
   }, [sortedPlaces]);
 
   return (
@@ -109,28 +122,41 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
           {markerPlaces.map((place) => {
             const isHovered = hoveredPlace === place.id;
             const position = place.calculatedPosition;
+            const placeName = place.shortName ?? place.name ?? 'Ort';
 
             return (
-              <button
+              <div
                 key={place.id}
-                type="button"
-                className={`absolute -translate-x-1/2 -translate-y-full transition-all duration-200 ${
-                  isHovered ? 'scale-125 z-10' : 'scale-100'
-                }`}
+                className="absolute"
                 style={{
                   left: `${position.x}%`,
                   top: `${position.y}%`,
                 }}
-                onMouseEnter={() => setHoveredPlace(place.id)}
-                onMouseLeave={() => setHoveredPlace(null)}
-                onClick={() => onPlaceSelect(place)}
               >
-                <img
-                  src={isHovered ? arrowYellow : arrowGreen}
-                  alt={place.shortName ?? place.name ?? 'Ort'}
-                  className="w-6 h-8"
-                />
-              </button>
+                {/* Tooltip - shows on hover */}
+                {isHovered && (
+                  <div 
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap z-20 pointer-events-none"
+                  >
+                    {placeName}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className={`-translate-x-1/2 -translate-y-full transition-all duration-200 ${
+                    isHovered ? 'scale-125 z-10' : 'scale-100'
+                  }`}
+                  onMouseEnter={() => setHoveredPlace(place.id)}
+                  onMouseLeave={() => setHoveredPlace(null)}
+                  onClick={() => onPlaceSelect(place)}
+                >
+                  <img
+                    src={isHovered ? arrowYellow : arrowGreen}
+                    alt={placeName}
+                    className="w-6 h-8"
+                  />
+                </button>
+              </div>
             );
           })}
         </div>
