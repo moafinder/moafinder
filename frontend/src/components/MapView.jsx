@@ -3,6 +3,46 @@ import mapImage from '../assets/Moabit.png';
 import arrowGreen from '../assets/pfad_pfeil.png';
 import arrowYellow from '../assets/pfad_pfeil_hover.png';
 
+// Moabit map bounds (approximate GPS coordinates that cover the map image)
+// These define the corners of the Moabit.png map
+const MAP_BOUNDS = {
+  north: 52.542,  // Top of map (latitude)
+  south: 52.516,  // Bottom of map (latitude)
+  west: 13.315,   // Left of map (longitude)
+  east: 13.385,   // Right of map (longitude)
+};
+
+/**
+ * Convert GPS coordinates to map percentage position
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {{ x: number, y: number } | null} - Percentage position or null if out of bounds
+ */
+function gpsToMapPosition(lat, lng) {
+  if (lat == null || lng == null) return null;
+  
+  // Check if coordinates are within map bounds (with some margin)
+  const margin = 0.005; // ~500m margin
+  if (
+    lat < MAP_BOUNDS.south - margin ||
+    lat > MAP_BOUNDS.north + margin ||
+    lng < MAP_BOUNDS.west - margin ||
+    lng > MAP_BOUNDS.east + margin
+  ) {
+    return null;
+  }
+  
+  // Calculate percentage position
+  const x = ((lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * 100;
+  const y = ((MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * 100;
+  
+  // Clamp to 0-100
+  return {
+    x: Math.max(0, Math.min(100, x)),
+    y: Math.max(0, Math.min(100, y)),
+  };
+}
+
 const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => {
   const [hoveredPlace, setHoveredPlace] = useState(null);
 
@@ -19,9 +59,25 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
     [places],
   );
 
-  const markerPlaces = sortedPlaces.filter(
-    (place) => place.mapPosition?.x != null && place.mapPosition?.y != null,
-  );
+  // Calculate map positions from GPS coordinates or use existing mapPosition
+  const markerPlaces = useMemo(() => {
+    return sortedPlaces
+      .map((place) => {
+        // If mapPosition is already set, use it
+        if (place.mapPosition?.x != null && place.mapPosition?.y != null) {
+          return { ...place, calculatedPosition: place.mapPosition };
+        }
+        // Otherwise try to calculate from GPS coordinates
+        if (place.coordinates?.lat != null && place.coordinates?.lng != null) {
+          const position = gpsToMapPosition(place.coordinates.lat, place.coordinates.lng);
+          if (position) {
+            return { ...place, calculatedPosition: position };
+          }
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }, [sortedPlaces]);
 
   return (
     <div className="w-full">
@@ -52,7 +108,7 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
 
           {markerPlaces.map((place) => {
             const isHovered = hoveredPlace === place.id;
-            const position = place.mapPosition;
+            const position = place.calculatedPosition;
 
             return (
               <button
@@ -81,20 +137,25 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
       )}
 
       <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {sortedPlaces.map((place) => (
-          <button
-            key={place.id}
-            type="button"
-            className={`text-left p-2 rounded transition-all duration-200 ${
-              hoveredPlace === place.id ? 'bg-gray-100 font-bold text-lg' : 'hover:bg-gray-50'
-            }`}
-            onMouseEnter={() => setHoveredPlace(place.id)}
-            onMouseLeave={() => setHoveredPlace(null)}
-            onClick={() => onPlaceSelect(place)}
-          >
-            {place.shortName ?? place.name}
-          </button>
-        ))}
+        {sortedPlaces.map((place) => {
+          const isHovered = hoveredPlace === place.id;
+          return (
+            <button
+              key={place.id}
+              type="button"
+              className={`text-left p-2 rounded transition-colors duration-200 min-h-[2.5rem] ${
+                isHovered ? 'bg-[#FFD966] text-black' : 'hover:bg-gray-50'
+              }`}
+              onMouseEnter={() => setHoveredPlace(place.id)}
+              onMouseLeave={() => setHoveredPlace(null)}
+              onClick={() => onPlaceSelect(place)}
+            >
+              <span className={isHovered ? 'font-semibold' : ''}>
+                {place.shortName ?? place.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

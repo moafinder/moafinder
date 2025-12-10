@@ -8,6 +8,7 @@ import pigeonWhite from '../assets/pigeon_white.png';
 
 const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -90,41 +91,64 @@ const Header = () => {
               )}
             </nav>
 
-            {/* Search and Login */}
+            {/* Search, Login, and Mobile Menu Toggle */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowSearch(true)}
-                className="text-white hover:text-green-400 transition-colors"
+                className="text-white hover:text-green-400 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
                 aria-label="Suche öffnen"
               >
                 <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
               </button>
-              {user ? (
-                <>
-                  <Link
-                    to="/dashboard"
-                    className="font-medium text-white hover:text-green-400 transition-colors"
-                  >
-                    Dashboard
+              
+              {/* Desktop auth links */}
+              <div className="hidden md:flex items-center space-x-4">
+                {user ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="font-medium text-white hover:text-green-400 transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="font-medium text-white hover:text-green-400 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <Link to="/login" className="font-medium text-white hover:text-green-400 transition-colors">
+                    Login
                   </Link>
-                  <button
-                    onClick={logout}
-                    className="font-medium text-white hover:text-green-400 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <Link to="/login" className="font-medium text-white hover:text-green-400 transition-colors">
-                  Login
-                </Link>
-              )}
+                )}
+              </div>
+              
+              {/* Mobile menu toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden text-white hover:text-green-400 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                aria-label={mobileMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          <nav className="md:hidden mt-4 pt-4 border-t border-gray-700">
-            <div className="flex flex-wrap gap-4">
+          {/* Mobile Navigation - Collapsible */}
+          {mobileMenuOpen && (
+          <nav className="md:hidden mt-4 pt-4 border-t border-gray-700 animate-fadeIn">
+            <div className="flex flex-col space-y-3">
               {navItems.map((item) =>
                 item.external ? (
                   <a
@@ -132,36 +156,51 @@ const Header = () => {
                     href={item.to}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={linkClass(item)}
+                    className={`${linkClass(item)} py-2 min-h-[44px] flex items-center touch-manipulation`}
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.label}
                   </a>
                 ) : (
-                  <Link key={item.label} to={item.to} className={linkClass(item)}>
+                  <Link 
+                    key={item.label} 
+                    to={item.to} 
+                    className={`${linkClass(item)} py-2 min-h-[44px] flex items-center touch-manipulation`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {item.label}
                   </Link>
                 ),
               )}
               {user ? (
                 <>
-                  <Link to="/dashboard" className="font-medium text-white transition-colors hover:text-green-400">
+                  <Link 
+                    to="/dashboard" 
+                    className="font-medium text-white transition-colors hover:text-green-400 py-2 min-h-[44px] flex items-center touch-manipulation"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Dashboard
                   </Link>
                   <button
                     type="button"
-                    onClick={logout}
-                    className="font-medium text-white transition-colors hover:text-green-400"
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="font-medium text-white transition-colors hover:text-green-400 py-2 min-h-[44px] flex items-center touch-manipulation text-left"
                   >
                     Logout
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="font-medium text-white transition-colors hover:text-green-400">
+                <Link 
+                  to="/login" 
+                  className="font-medium text-white transition-colors hover:text-green-400 py-2 min-h-[44px] flex items-center touch-manipulation"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   Login
                 </Link>
               )}
             </div>
           </nav>
+          )}
         </div>
       </header>
 

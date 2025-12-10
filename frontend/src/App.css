@@ -129,3 +129,45 @@ img { max-width: 100%; height: auto; display: block; }
   border-radius: 9999px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
+
+/* ---- Mobile/Tablet Touch Improvements ---- */
+@media (hover: none) and (pointer: coarse) {
+  /* Ensure minimum touch target sizes on touch devices */
+  button, a, input, select {
+    min-height: 44px;
+  }
+  
+  /* Disable hover effects on touch devices to prevent sticky states */
+  .group:hover .group-hover\:block {
+    display: none;
+  }
+}
+
+/* Animation for mobile menu */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Ensure date input works well on iPad/iOS */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+
+/* Improve select visibility when selected items exist */
+select:focus {
+  outline: 2px solid var(--primary-green);
+  outline-offset: -2px;
+}

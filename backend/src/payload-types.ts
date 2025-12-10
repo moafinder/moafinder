@@ -267,7 +267,7 @@ export interface Event {
     details?: string | null;
   };
   tags?: (string | Tag)[] | null;
-  status: 'draft' | 'pending' | 'approved' | 'archived';
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'archived';
   expiryDate?: string | null;
   lastRenewalReminder?: string | null;
   updatedAt: string;
@@ -309,6 +309,14 @@ export interface Location {
     y?: number | null;
   };
   openingHours?: string | null;
+  /**
+   * Kontakt-E-Mail für diesen Ort
+   */
+  email?: string | null;
+  /**
+   * URL der Webseite (z.B. https://example.com)
+   */
+  homepage?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -551,6 +559,8 @@ export interface LocationsSelect<T extends boolean = true> {
         y?: T;
       };
   openingHours?: T;
+  email?: T;
+  homepage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -192,7 +192,15 @@ const EventDetail = () => {
           </p>
           <p className="text-sm text-gray-500">{event.eventTypeLabel}</p>
           {event.recurrenceLabel && (
-            <p className="text-sm text-gray-600">Rhythmus: {event.recurrenceLabel}</p>
+            <div className="mt-2 flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="font-semibold">Regelmäßiges Angebot</p>
+                <p>{event.recurrenceLabel}</p>
+              </div>
+            </div>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -306,6 +314,18 @@ const EventDetail = () => {
                     {organizer.website.replace(/^https?:\/\//, '')}
                   </a>
                 </p>
+              )}
+              {organizer.email && (
+                <a
+                  href={`mailto:${organizer.email}?subject=Anfrage zu: ${event.title}`}
+                  className="mt-3 inline-flex items-center px-4 py-2 bg-[#7CB92C] text-white rounded-lg hover:bg-[#6aa825] transition-colors w-full justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  Nachricht senden
+                </a>
               )}
             </div>
           )}

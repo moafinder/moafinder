@@ -311,8 +311,16 @@ const Events: CollectionConfig = {
         { label: 'Archiviert', value: 'archived' },
       ],
       access: {
-        update: ({ req }: { req: PayloadRequest }) =>
-          req.user?.role === 'editor' || req.user?.role === 'admin',
+        update: async ({ req, data, siblingData }: { req: PayloadRequest; data?: any; siblingData?: any }) => {
+          const user = req.user as any
+          if (!user) return false
+          // Editors and admins can always update status
+          if (user.role === 'editor' || user.role === 'admin') return true
+          // Organizers can only change status to draft or pending (e.g., submit for review)
+          const targetStatus = data ?? siblingData?.status
+          if (targetStatus === 'draft' || targetStatus === 'pending') return true
+          return false
+        },
       },
     },
     {

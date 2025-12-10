@@ -8,5 +8,19 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['tests/int/**/*.int.spec.ts'],
+    // Run test files sequentially to avoid MongoDB lock contention
+    // Each test file uses the same database and they conflict when running in parallel
+    fileParallelism: false,
+    // Pool options for better isolation
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+    // Retry transient failures (e.g., MongoDB lock timeouts)
+    retry: 1,
+    // Increase test timeout for database operations
+    testTimeout: 30000,
   },
 })

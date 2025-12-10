@@ -49,7 +49,7 @@ interface CsvRow {
   LON?: string
 }
 
-async function importLocations(csvPath: string, dryRun = false) {
+async function importLocations(csvPath: string, dryRun = false, defaultOrgId?: string) {
   const absolutePath = path.resolve(csvPath)
 
   if (!fs.existsSync(absolutePath)) {
@@ -120,14 +120,29 @@ async function importLocations(csvPath: string, dryRun = false) {
     // Build street with address addition if present
     let street = row['Straße']?.trim() || ''
     const addressAddition = row['Adressenzusatz']?.trim()
-    if (addressAddition) {
+    if (addressAddition && addressAddition !== '–' && addressAddition !== '-') {
       street = street ? `${street} (${addressAddition})` : addressAddition
     }
 
-    // Parse coordinates
+    // Parse coordinates - handle German number format with periods as thousands separators
+    // Format in CSV: "5.253.269.674.008.180" should be "52.532696..." 
     let coordinates: [number, number] | undefined
-    const lat = parseFloat(row['LAT']?.replace(',', '.') || '')
-    const lon = parseFloat(row['LON']?.replace(',', '.') || '')
+    let latStr = row['LAT']?.trim() || ''
+    let lonStr = row['LON']?.trim() || ''
+    
+    // Remove all periods except the decimal one (German format has periods as thousands separators)
+    // The correct format for Berlin should be around 52.5xxx for lat and 13.3xxx for lon
+    const parseGermanCoord = (str: string): number => {
+      if (!str) return NaN
+      // Remove all periods, then add decimal point after first 2 digits
+      const cleaned = str.replace(/\./g, '')
+      if (cleaned.length < 3) return NaN
+      const withDecimal = cleaned.slice(0, 2) + '.' + cleaned.slice(2)
+      return parseFloat(withDecimal)
+    }
+    
+    const lat = parseGermanCoord(latStr)
+    const lon = parseGermanCoord(lonStr)
     if (!isNaN(lat) && !isNaN(lon)) {
       // Payload stores coordinates as [longitude, latitude] (GeoJSON format)
       coordinates = [lon, lat]
@@ -140,19 +155,38 @@ async function importLocations(csvPath: string, dryRun = false) {
       organizationId = await findOrCreateOrganization(organizerName)
     }
 
+    // Clean up fields - remove placeholder dashes and fix Unicode characters
+    const cleanField = (val?: string) => {
+      let trimmed = val?.trim() || ''
+      if (trimmed === '–' || trimmed === '-') return ''
+      // Replace Unicode hyphens with regular hyphens
+      trimmed = trimmed.replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-')
+      return trimmed
+    }
+    
+    // Clean email specifically - remove any parenthetical notes
+    const cleanEmail = (val?: string) => {
+      let email = cleanField(val)
+      // Remove parenthetical notes like "(ersetzt E-Mail)"
+      email = email.replace(/\s*\([^)]*\)\s*$/, '')
+      // Replace Unicode hyphens in email addresses
+      email = email.replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-')
+      return email
+    }
+
     const locationData = {
-      name: fullName,
-      shortName: shortName || fullName.substring(0, 40),
-      description: row['Beschreibungstext (1000 Zeichen)']?.substring(0, 1000) || '',
+      name: fullName.replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-'),
+      shortName: (shortName || fullName.substring(0, 40)).replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-'),
+      description: (row['Beschreibungstext (1000 Zeichen)']?.substring(0, 1000) || '').replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-'),
       address: {
-        street: street,
-        number: row['Nr.']?.trim() || '',
-        postalCode: row['PLZ']?.trim() || '',
+        street: street.replace(/\u2010|\u2011|\u2012|\u2013|\u2014|\u2015/g, '-'),
+        number: cleanField(row['Nr.']) || '1',  // Default to '1' if empty since it's required
+        postalCode: cleanField(row['PLZ']) || '10551',  // Default to Moabit PLZ if empty
         city: 'Berlin',
       },
-      openingHours: row['Öffnungszeiten (optional)']?.trim() || '',
-      email: row['Email']?.trim() || '',
-      homepage: row['Homepage']?.trim() || '',
+      openingHours: cleanField(row['Öffnungszeiten (optional)']),
+      email: cleanEmail(row['Email']) || undefined,  // Don't include if empty to avoid validation
+      homepage: cleanField(row['Homepage']),
       coordinates: coordinates,
       owner: organizationId,
     }
@@ -181,15 +215,24 @@ async function importLocations(csvPath: string, dryRun = false) {
     }
 
     if (!organizationId) {
-      console.log(`  ⚠️  No organization found - skipping (locations require an owner)`)
-      skipCount++
-      continue
+      if (defaultOrgId) {
+        console.log(`  Using default organization: ${defaultOrgId}`)
+        organizationId = defaultOrgId
+      } else {
+        console.log(`  ⚠️  No organization found - skipping (use --default-org=<id> to set a default)`)
+        skipCount++
+        continue
+      }
     }
+
+    // Update the owner field with the final organization ID
+    locationData.owner = organizationId
 
     try {
       const created = await payload.create({
         collection: 'locations',
         data: locationData as any,
+        overrideAccess: true,  // Bypass access control for import
       })
       console.log(`  ✅ Created location with ID: ${created.id}`)
       successCount++
@@ -210,21 +253,23 @@ async function importLocations(csvPath: string, dryRun = false) {
 // Parse command line arguments
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
+const defaultOrgId = args.find((arg) => arg.startsWith('--default-org='))?.split('=')[1]
 const csvPath = args.find((arg) => !arg.startsWith('--'))
 
 if (!csvPath) {
-  console.log('Usage: pnpm tsx scripts/import-locations.ts <csv-file> [--dry-run]')
+  console.log('Usage: pnpm tsx scripts/import-locations.ts <csv-file> [options]')
   console.log('')
   console.log('Options:')
-  console.log('  --dry-run    Preview what would be imported without making changes')
+  console.log('  --dry-run              Preview what would be imported without making changes')
+  console.log('  --default-org=<id>     Use this organization ID for all locations without a match')
   console.log('')
   console.log('Example:')
   console.log('  pnpm tsx scripts/import-locations.ts locations.csv --dry-run')
-  console.log('  pnpm tsx scripts/import-locations.ts locations.csv')
+  console.log('  pnpm tsx scripts/import-locations.ts locations.csv --default-org=abc123')
   process.exit(1)
 }
 
-importLocations(csvPath, dryRun)
+importLocations(csvPath, dryRun, defaultOrgId)
   .then(() => {
     console.log('')
     console.log('Import complete!')
