@@ -120,3 +120,54 @@ Example: update the cached App Runner domain and verify both checks in one go:
 ```bash
 pnpm predeploy:check --server-url https://new-id.awsapprunner.com --write-env
 ```
+
+## Utility Scripts
+
+The `scripts/` directory contains utility scripts for managing data and users:
+
+### User Management
+
+| Script | Description | Usage |
+| --- | --- | --- |
+| `create-user.mjs` | Create or update a user | `node scripts/create-user.mjs <email> <password> [--role admin\|organizer\|user]` |
+| `list-users.mjs` | List all users | `node scripts/list-users.mjs` |
+| `promote-user.mjs` | Promote a user to admin | `node scripts/promote-user.mjs <email>` |
+| `cleanup-test-users.mjs` | Delete all @example.com test users | `node scripts/cleanup-test-users.mjs` |
+
+### Location & Data Management
+
+| Script | Description | Usage |
+| --- | --- | --- |
+| `import-locations.ts` | Import locations from CSV | `pnpm tsx scripts/import-locations.ts <file.csv> [--apply] [--org-id <id>]` |
+| `geocode-locations.ts` | Geocode addresses to GPS coordinates | `pnpm tsx scripts/geocode-locations.ts [--apply]` |
+| `list-orgs.ts` | List all organizations | `pnpm tsx scripts/list-orgs.ts` |
+| `create-import-org.ts` | Create the default import organization | `pnpm tsx scripts/create-import-org.ts` |
+
+### Diagnostics
+
+| Script | Description | Usage |
+| --- | --- | --- |
+| `check-coords.ts` | Check location coordinates and map bounds | `pnpm tsx scripts/check-coords.ts` |
+| `group-coords.ts` | Show locations grouped by coordinates | `pnpm tsx scripts/group-coords.ts` |
+
+### Examples
+
+**Import locations from CSV:**
+```bash
+pnpm tsx scripts/import-locations.ts ../file_repository/locations.csv --apply --org-id 6939c4de538f2faf1750504c
+```
+
+**Geocode all locations using their street addresses:**
+```bash
+# Dry run first
+pnpm tsx scripts/geocode-locations.ts
+
+# Apply changes to database
+pnpm tsx scripts/geocode-locations.ts --apply
+```
+
+**Create an admin user:**
+```bash
+node scripts/create-user.mjs admin@example.com SecurePass123! --role admin
+```
+
