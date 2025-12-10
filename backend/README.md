@@ -24,6 +24,37 @@ After you click the `Deploy` button above, you'll want to have standalone copy o
 
 That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
 
+## Testing
+
+### ⚠️ CRITICAL: Never Test Against Production ⚠️
+
+**Integration tests MUST run against a local MongoDB instance, NEVER against production.**
+
+The test suite creates, modifies, and deletes data. Running tests against production will corrupt or destroy real user data.
+
+#### Safe Testing Setup
+
+1. **Start a local MongoDB** (Docker recommended):
+   ```bash
+   docker run -d -p 27017:27017 --name mongo-test mongo:7
+   ```
+
+2. **Run tests with local database**:
+   ```bash
+   DATABASE_URI=mongodb://localhost:27017/moafinder-test pnpm vitest run
+   ```
+
+3. **Or use the test.env file**:
+   ```bash
+   # Create backend/test.env with:
+   DATABASE_URI=mongodb://localhost:27017/moafinder-test
+   
+   # Then run:
+   pnpm vitest run
+   ```
+
+The test setup (`vitest.setup.ts`) includes a safety check that will **abort tests** if it detects a production database URI. This is a last line of defense—always configure your environment correctly.
+
 #### Docker (Optional)
 
 If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.

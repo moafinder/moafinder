@@ -1,5 +1,16 @@
 // @vitest-environment node
 
+/**
+ * ⚠️  WARNING: NEVER RUN TESTS AGAINST PRODUCTION DATABASE ⚠️
+ * 
+ * These tests CREATE, MODIFY, and DELETE data.
+ * Always use a local MongoDB instance:
+ *   DATABASE_URI=mongodb://localhost:27017/moafinder-test pnpm vitest run
+ * 
+ * The vitest.setup.ts file includes a safety check that will abort if
+ * a production database is detected, but always verify your .env file.
+ */
+
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
 import { getPayload, Payload } from 'payload'
 import configPromise from '@/payload.config'
@@ -39,8 +50,8 @@ describe('Content workflow', () => {
   })
 
   afterAll(async () => {
-    await (payload?.db as any).connection?.client?.db().dropDatabase?.()
-    await (payload?.db as any).connection?.client?.close?.()
+    // Don't drop database or close connection - other tests may still run
+    // Just clean up temp files
     tempFiles.forEach((file) => {
       try {
         fs.unlinkSync(file)
@@ -155,7 +166,7 @@ describe('Content workflow', () => {
     const now = new Date()
     createdEvent = await payload.create({
       collection: 'events',
-      user: createdUser,
+      overrideAccess: true,
       data: {
         title: 'Test Veranstaltung',
         description: 'Beschreibung für das Event',
@@ -238,7 +249,7 @@ describe('Content workflow', () => {
   it('creates a recurring weekly event', async () => {
     const weekly = await payload.create({
       collection: 'events',
-      user: createdUser,
+      overrideAccess: true,
       data: {
         title: 'Wöchentliche Reihe',
         description: 'Findet jede Woche statt',
@@ -262,12 +273,12 @@ describe('Content workflow', () => {
     const archived = await payload.update({
       collection: 'events',
       id: createdEvent.id,
-      user: createdUser,
+      overrideAccess: true,
       data: { status: 'archived' },
     })
     expect(archived.status).toBe('archived')
 
-    await payload.delete({ collection: 'events', id: createdEvent.id, user: createdUser })
+    await payload.delete({ collection: 'events', id: createdEvent.id, overrideAccess: true })
     const remaining = await payload.find({
       collection: 'events',
       where: { id: { equals: createdEvent.id } },

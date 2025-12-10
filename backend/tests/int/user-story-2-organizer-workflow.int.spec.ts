@@ -1,5 +1,16 @@
 // @vitest-environment node
 
+/**
+ * ⚠️  WARNING: NEVER RUN TESTS AGAINST PRODUCTION DATABASE ⚠️
+ * 
+ * These tests CREATE, MODIFY, and DELETE data.
+ * Always use a local MongoDB instance:
+ *   DATABASE_URI=mongodb://localhost:27017/moafinder-test pnpm vitest run
+ * 
+ * The vitest.setup.ts file includes a safety check that will abort if
+ * a production database is detected, but always verify your .env file.
+ */
+
 import { getPayload, Payload } from 'payload'
 import configPromise from '@/payload.config'
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
