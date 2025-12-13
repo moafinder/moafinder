@@ -4,8 +4,9 @@ const Organizations: CollectionConfig = {
   slug: 'organizations',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'email', 'approved', 'createdAt'],
+    defaultColumns: ['name', 'email', 'approved', 'owner', 'createdAt'],
     description: 'Organisationen verwalten Veranstaltungsorte und Benutzer. Jeder Benutzer und jeder Ort kann mehreren Organisationen zugeordnet sein.',
+    group: 'Verwaltung',
   },
   access: {
     read: () => true,
@@ -105,6 +106,63 @@ const Organizations: CollectionConfig = {
       access: {
         update: ({ req }: { req: PayloadRequest }) =>
           req.user?.role === 'editor' || req.user?.role === 'admin',
+      },
+    },
+    // Virtual field to show members - populated via endpoint
+    {
+      name: 'memberCount',
+      type: 'number',
+      label: 'Anzahl Mitglieder',
+      admin: {
+        readOnly: true,
+        description: 'Anzahl der Benutzer, die dieser Organisation zugeordnet sind.',
+      },
+      virtual: true,
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            if (!data?.id) return 0
+            try {
+              const users = await req.payload.find({
+                collection: 'users',
+                where: { organizations: { contains: data.id } },
+                limit: 0,
+                overrideAccess: true,
+              })
+              return users.totalDocs
+            } catch {
+              return 0
+            }
+          },
+        ],
+      },
+    },
+    {
+      name: 'locationCount',
+      type: 'number',
+      label: 'Anzahl Orte',
+      admin: {
+        readOnly: true,
+        description: 'Anzahl der Orte, die dieser Organisation zugeordnet sind.',
+      },
+      virtual: true,
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            if (!data?.id) return 0
+            try {
+              const locations = await req.payload.find({
+                collection: 'locations',
+                where: { organizations: { contains: data.id } },
+                limit: 0,
+                overrideAccess: true,
+              })
+              return locations.totalDocs
+            } catch {
+              return 0
+            }
+          },
+        ],
       },
     },
   ],

@@ -38,8 +38,9 @@ const Locations: CollectionConfig = {
   slug: 'locations',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'shortName', 'organizations', 'address'],
+    defaultColumns: ['name', 'shortName', 'organizationNames', 'address'],
     description: 'Veranstaltungsorte können mehreren Organisationen zugeordnet sein.',
+    group: 'Inhalte',
   },
   access: {
     read: () => true,
@@ -85,6 +86,45 @@ const Locations: CollectionConfig = {
       required: true,
       admin: {
         description: 'Organisationen, die diesen Ort verwalten können. Benutzer sehen nur Orte ihrer Organisationen.',
+      },
+    },
+    // Virtual field for displaying organization names in list view
+    {
+      name: 'organizationNames',
+      type: 'text',
+      label: 'Organisationen (Namen)',
+      admin: {
+        readOnly: true,
+        hidden: true,
+      },
+      virtual: true,
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            if (!data?.organizations || !Array.isArray(data.organizations) || data.organizations.length === 0) {
+              return ''
+            }
+            const names: string[] = []
+            for (const org of data.organizations) {
+              if (typeof org === 'object' && org?.name) {
+                names.push(org.name)
+              } else if (typeof org === 'string') {
+                try {
+                  const orgDoc = await req.payload.findByID({
+                    collection: 'organizations',
+                    id: org,
+                    depth: 0,
+                    overrideAccess: true,
+                  })
+                  if (orgDoc?.name) names.push(orgDoc.name)
+                } catch {
+                  // ignore
+                }
+              }
+            }
+            return names.join(', ')
+          },
+        ],
       },
     },
     {

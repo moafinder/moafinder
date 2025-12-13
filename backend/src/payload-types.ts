@@ -133,6 +133,7 @@ export interface User {
    * Organisationen, denen dieser Benutzer angehört. Bestimmt welche Orte zur Veranstaltungserstellung verfügbar sind.
    */
   organizations?: (string | Organization)[] | null;
+  organizationNames?: string | null;
   disabled?: boolean | null;
   emailVerified?: boolean | null;
   emailVerification?: {
@@ -189,6 +190,14 @@ export interface Organization {
   phone?: string | null;
   logo?: (string | null) | Media;
   approved?: boolean | null;
+  /**
+   * Anzahl der Benutzer, die dieser Organisation zugeordnet sind.
+   */
+  memberCount?: number | null;
+  /**
+   * Anzahl der Orte, die dieser Organisation zugeordnet sind.
+   */
+  locationCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -296,6 +305,7 @@ export interface Location {
    * Organisationen, die diesen Ort verwalten können. Benutzer sehen nur Orte ihrer Organisationen.
    */
   organizations: (string | Organization)[];
+  organizationNames?: string | null;
   name: string;
   /**
    * Erscheint im Filtermenü und in der Karte
@@ -443,6 +453,7 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   organizations?: T;
+  organizationNames?: T;
   disabled?: T;
   emailVerified?: T;
   emailVerification?:
@@ -493,6 +504,8 @@ export interface OrganizationsSelect<T extends boolean = true> {
   phone?: T;
   logo?: T;
   approved?: T;
+  memberCount?: T;
+  locationCount?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -552,6 +565,7 @@ export interface EventsSelect<T extends boolean = true> {
  */
 export interface LocationsSelect<T extends boolean = true> {
   organizations?: T;
+  organizationNames?: T;
   name?: T;
   shortName?: T;
   description?: T;

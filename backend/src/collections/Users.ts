@@ -33,7 +33,8 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'name', 'role', 'organizations', 'emailVerified', 'disabled'],
+    defaultColumns: ['email', 'name', 'role', 'organizationNames', 'emailVerified', 'disabled'],
+    group: 'Verwaltung',
   },
   auth: {
     cookies: {
@@ -107,6 +108,46 @@ export const Users: CollectionConfig = {
       },
       access: {
         update: ({ req }) => req.user?.role === 'admin',
+      },
+    },
+    // Virtual field for displaying organization names in list view
+    {
+      name: 'organizationNames',
+      type: 'text',
+      label: 'Organisationen (Namen)',
+      admin: {
+        readOnly: true,
+        hidden: true, // Hide from edit form, shown in list
+      },
+      virtual: true,
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            if (!data?.organizations || !Array.isArray(data.organizations) || data.organizations.length === 0) {
+              return ''
+            }
+            // Organizations may be IDs or populated objects
+            const names: string[] = []
+            for (const org of data.organizations) {
+              if (typeof org === 'object' && org?.name) {
+                names.push(org.name)
+              } else if (typeof org === 'string') {
+                try {
+                  const orgDoc = await req.payload.findByID({
+                    collection: 'organizations',
+                    id: org,
+                    depth: 0,
+                    overrideAccess: true,
+                  })
+                  if (orgDoc?.name) names.push(orgDoc.name)
+                } catch {
+                  // ignore
+                }
+              }
+            }
+            return names.join(', ')
+          },
+        ],
       },
     },
     {
