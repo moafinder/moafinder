@@ -105,6 +105,7 @@ export const Users: CollectionConfig = {
       required: false,
       admin: {
         description: 'Organisationen, denen dieser Benutzer angehört. Bestimmt welche Orte zur Veranstaltungserstellung verfügbar sind.',
+        allowCreate: false, // Disable inline creation to avoid React error
       },
       access: {
         update: ({ req }) => req.user?.role === 'admin',

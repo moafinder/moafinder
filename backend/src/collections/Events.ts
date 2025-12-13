@@ -281,6 +281,7 @@ const Events: CollectionConfig = {
       label: 'Veranstalter',
       admin: {
         description: 'Wähle die Organisation, die diese Veranstaltung ausrichtet.',
+        allowCreate: false, // Disable inline creation to avoid React error
         // For non-admins, the organizer is auto-assigned from their organization
         condition: (data, siblingData, { user }) => {
           // Always show for admins so they can select any organization

@@ -173,12 +173,11 @@ export interface User {
 export interface Organization {
   id: string;
   /**
-   * Benutzer, der diese Organisation verwaltet (optional).
+   * Benutzer, der diese Organisation verwaltet.
    */
   owner?: (string | null) | User;
   name: string;
   email: string;
-  role?: ('organizer' | 'editor' | 'admin') | null;
   contactPerson?: string | null;
   address?: {
     street?: string | null;
@@ -189,15 +188,25 @@ export interface Organization {
   website?: string | null;
   phone?: string | null;
   logo?: (string | null) | Media;
+  /**
+   * Nur freigegebene Organisationen können Veranstaltungen erstellen.
+   */
   approved?: boolean | null;
   /**
-   * Anzahl der Benutzer, die dieser Organisation zugeordnet sind.
+   * Benutzer, die dieser Organisation beitreten möchten.
    */
-  memberCount?: number | null;
-  /**
-   * Anzahl der Orte, die dieser Organisation zugeordnet sind.
-   */
-  locationCount?: number | null;
+  membershipRequests?:
+    | {
+        user: string | User;
+        status?: ('pending' | 'approved' | 'rejected') | null;
+        requestedAt?: string | null;
+        /**
+         * Optionale Nachricht des Benutzers.
+         */
+        message?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -490,7 +499,6 @@ export interface OrganizationsSelect<T extends boolean = true> {
   owner?: T;
   name?: T;
   email?: T;
-  role?: T;
   contactPerson?: T;
   address?:
     | T
@@ -504,8 +512,15 @@ export interface OrganizationsSelect<T extends boolean = true> {
   phone?: T;
   logo?: T;
   approved?: T;
-  memberCount?: T;
-  locationCount?: T;
+  membershipRequests?:
+    | T
+    | {
+        user?: T;
+        status?: T;
+        requestedAt?: T;
+        message?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

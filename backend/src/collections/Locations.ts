@@ -86,6 +86,7 @@ const Locations: CollectionConfig = {
       required: true,
       admin: {
         description: 'Organisationen, die diesen Ort verwalten können. Benutzer sehen nur Orte ihrer Organisationen.',
+        allowCreate: false, // Disable inline creation to avoid React error
       },
     },
     // Virtual field for displaying organization names in list view

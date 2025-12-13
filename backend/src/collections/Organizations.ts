@@ -11,14 +11,14 @@ const Organizations: CollectionConfig = {
   access: {
     read: () => true,
     create: ({ req }: { req: PayloadRequest }) => {
-      // Only admins can create organizations
-      return req.user?.role === 'admin'
+      // All authenticated users can create organizations (pending approval)
+      return !!req.user
     },
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false
       if (user.role === 'admin' || user.role === 'editor') return true
-      // Organization owners can update their own org
+      // Organization owners can update their own org (except approval status)
       return {
         owner: {
           equals: user.id,
@@ -38,7 +38,8 @@ const Organizations: CollectionConfig = {
       required: false,
       label: 'Eigentümer',
       admin: {
-        description: 'Benutzer, der diese Organisation verwaltet (optional).',
+        description: 'Benutzer, der diese Organisation verwaltet.',
+        condition: (data, siblingData, { user }) => user?.role === 'admin' || user?.role === 'editor',
       },
     },
     {
@@ -52,19 +53,6 @@ const Organizations: CollectionConfig = {
       type: 'email',
       required: true,
       label: 'E-Mail-Adresse',
-    },
-    {
-      name: 'role',
-      type: 'select',
-      options: [
-        { label: 'Veranstalter', value: 'organizer' },
-        { label: 'Redaktion', value: 'editor' },
-        { label: 'Admin', value: 'admin' },
-      ],
-      defaultValue: 'organizer',
-      access: {
-        update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
-      },
     },
     {
       name: 'contactPerson',
@@ -103,86 +91,102 @@ const Organizations: CollectionConfig = {
       type: 'checkbox',
       label: 'Freigegeben',
       defaultValue: false,
+      admin: {
+        description: 'Nur freigegebene Organisationen können Veranstaltungen erstellen.',
+        condition: (data, siblingData, { user }) => user?.role === 'admin' || user?.role === 'editor',
+      },
       access: {
         update: ({ req }: { req: PayloadRequest }) =>
           req.user?.role === 'editor' || req.user?.role === 'admin',
       },
     },
-    // Virtual field to show members - populated via endpoint
+    // Membership requests - users can request to join an organization
     {
-      name: 'memberCount',
-      type: 'number',
-      label: 'Anzahl Mitglieder',
+      name: 'membershipRequests',
+      type: 'array',
+      label: 'Mitgliedschaftsanfragen',
       admin: {
-        readOnly: true,
-        position: 'sidebar',
-        description: 'Anzahl der Benutzer, die dieser Organisation zugeordnet sind.',
+        description: 'Benutzer, die dieser Organisation beitreten möchten.',
+        condition: (data, siblingData, { user }) => user?.role === 'admin' || user?.role === 'editor',
       },
-      virtual: true,
-      hooks: {
-        afterRead: [
-          async ({ data, req, siblingData }) => {
-            // Only calculate for existing documents, not during creation
-            const docId = data?.id || siblingData?.id
-            if (!docId || !req?.payload) return 0
-            try {
-              const users = await req.payload.find({
-                collection: 'users',
-                where: { organizations: { contains: docId } },
-                limit: 0,
-                overrideAccess: true,
-              })
-              return users.totalDocs
-            } catch {
-              return 0
-            }
+      fields: [
+        {
+          name: 'user',
+          type: 'relationship',
+          relationTo: 'users',
+          required: true,
+          label: 'Benutzer',
+        },
+        {
+          name: 'status',
+          type: 'select',
+          options: [
+            { label: 'Ausstehend', value: 'pending' },
+            { label: 'Genehmigt', value: 'approved' },
+            { label: 'Abgelehnt', value: 'rejected' },
+          ],
+          defaultValue: 'pending',
+          label: 'Status',
+        },
+        {
+          name: 'requestedAt',
+          type: 'date',
+          label: 'Angefragt am',
+          admin: { readOnly: true },
+        },
+        {
+          name: 'message',
+          type: 'textarea',
+          label: 'Nachricht',
+          admin: {
+            description: 'Optionale Nachricht des Benutzers.',
           },
-        ],
-      },
-    },
-    {
-      name: 'locationCount',
-      type: 'number',
-      label: 'Anzahl Orte',
-      admin: {
-        readOnly: true,
-        position: 'sidebar',
-        description: 'Anzahl der Orte, die dieser Organisation zugeordnet sind.',
-      },
-      virtual: true,
-      hooks: {
-        afterRead: [
-          async ({ data, req, siblingData }) => {
-            // Only calculate for existing documents, not during creation
-            const docId = data?.id || siblingData?.id
-            if (!docId || !req?.payload) return 0
-            try {
-              const locations = await req.payload.find({
-                collection: 'locations',
-                where: { organizations: { contains: docId } },
-                limit: 0,
-                overrideAccess: true,
-              })
-              return locations.totalDocs
-            } catch {
-              return 0
-            }
-          },
-        ],
-      },
+        },
+      ],
     },
   ],
   hooks: {
     beforeChange: [({ data, req, operation }) => {
       if (!data) return data
+      // Auto-assign owner on create
       if (operation === 'create' && req.user) {
         data.owner = req.user.id
-      }
-      if (operation === 'update' && req.user && req.user.role === 'organizer') {
-        data.owner = req.user.id
+        // Organizations created by non-admins start as unapproved
+        if (req.user.role !== 'admin' && req.user.role !== 'editor') {
+          data.approved = false
+        }
       }
       return data
     }],
+    afterChange: [
+      async ({ doc, req, operation }) => {
+        // When an organization is created, add the owner to its members
+        if (operation === 'create' && doc.owner) {
+          try {
+            const ownerId = typeof doc.owner === 'object' ? doc.owner.id : doc.owner
+            const user = await req.payload.findByID({
+              collection: 'users',
+              id: ownerId,
+              depth: 0,
+              overrideAccess: true,
+            })
+            const currentOrgs = user?.organizations || []
+            const orgIds = currentOrgs.map((o: any) => typeof o === 'object' ? o.id : o)
+            if (!orgIds.includes(doc.id)) {
+              await req.payload.update({
+                collection: 'users',
+                id: ownerId,
+                data: { organizations: [...orgIds, doc.id] },
+                overrideAccess: true,
+              })
+            }
+          } catch {
+            // Best effort
+          }
+        }
+        return doc
+      },
+    ],
   },
   timestamps: true,
 }
