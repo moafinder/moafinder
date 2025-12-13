@@ -129,7 +129,10 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
-  organization?: (string | null) | Organization;
+  /**
+   * Organisationen, denen dieser Benutzer angehört. Bestimmt welche Orte zur Veranstaltungserstellung verfügbar sind.
+   */
+  organizations?: (string | Organization)[] | null;
   disabled?: boolean | null;
   emailVerified?: boolean | null;
   emailVerification?: {
@@ -161,12 +164,17 @@ export interface User {
   password?: string | null;
 }
 /**
+ * Organisationen verwalten Veranstaltungsorte und Benutzer. Jeder Benutzer und jeder Ort kann mehreren Organisationen zugeordnet sein.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "organizations".
  */
 export interface Organization {
   id: string;
-  owner: string | User;
+  /**
+   * Benutzer, der diese Organisation verwaltet (optional).
+   */
+  owner?: (string | null) | User;
   name: string;
   email: string;
   role?: ('organizer' | 'editor' | 'admin') | null;
@@ -277,15 +285,17 @@ export interface Event {
   createdAt: string;
 }
 /**
+ * Veranstaltungsorte können mehreren Organisationen zugeordnet sein.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "locations".
  */
 export interface Location {
   id: string;
   /**
-   * Organisation, der dieser Ort gehört. Wird bei Nicht-Admins automatisch gesetzt.
+   * Organisationen, die diesen Ort verwalten können. Benutzer sehen nur Orte ihrer Organisationen.
    */
-  owner: string | Organization;
+  organizations: (string | Organization)[];
   name: string;
   /**
    * Erscheint im Filtermenü und in der Karte
@@ -432,7 +442,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  organization?: T;
+  organizations?: T;
   disabled?: T;
   emailVerified?: T;
   emailVerification?:
@@ -541,7 +551,7 @@ export interface EventsSelect<T extends boolean = true> {
  * via the `definition` "locations_select".
  */
 export interface LocationsSelect<T extends boolean = true> {
-  owner?: T;
+  organizations?: T;
   name?: T;
   shortName?: T;
   description?: T;

@@ -1,10 +1,45 @@
 import type { CollectionConfig, PayloadRequest } from 'payload'
 
+// Helper to get user's organization IDs
+async function getUserOrganizationIds(req: PayloadRequest): Promise<string[]> {
+  const user = req.user as any
+  if (!user) return []
+  
+  const orgIds: string[] = []
+  
+  // Get organizations from user's organizations field (hasMany)
+  if (user.organizations) {
+    const orgs = Array.isArray(user.organizations) ? user.organizations : [user.organizations]
+    orgs.forEach((org: any) => {
+      const id = typeof org === 'object' ? org?.id : org
+      if (id && !orgIds.includes(id)) orgIds.push(id)
+    })
+  }
+  
+  // Also check for organizations they own
+  try {
+    const owned = await req.payload.find({
+      collection: 'organizations',
+      where: { owner: { equals: user.id } } as any,
+      limit: 100,
+      overrideAccess: true,
+    })
+    owned.docs.forEach((org: any) => {
+      if (org.id && !orgIds.includes(org.id)) orgIds.push(org.id)
+    })
+  } catch {
+    // ignore
+  }
+  
+  return orgIds
+}
+
 const Locations: CollectionConfig = {
   slug: 'locations',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'shortName', 'owner', 'address'],
+    defaultColumns: ['name', 'shortName', 'organizations', 'address'],
+    description: 'Veranstaltungsorte können mehreren Organisationen zugeordnet sein.',
   },
   access: {
     read: () => true,
@@ -14,72 +49,42 @@ const Locations: CollectionConfig = {
       if (user.role === 'admin' || user.role === 'editor') return true
 
       // Allow non-admins to create only if they belong to at least one organization
-      try {
-        const owned = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 1,
-          overrideAccess: true,
-        })
-        // Check user's organization membership (handle both object and ID reference)
-        const membershipId = typeof user.organization === 'object' ? user.organization?.id : user.organization
-        const hasMembership = membershipId ? 1 : 0
-        return (owned?.totalDocs ?? 0) + hasMembership > 0
-      } catch {
-        return false
-      }
+      const orgIds = await getUserOrganizationIds(req)
+      return orgIds.length > 0
     },
     update: async ({ req }: { req: PayloadRequest }) => {
       const user = req.user as any
       if (!user) return false
       if (user.role === 'admin') return true
-      // Editors/Organizers may update only their own locations
-      try {
-        const orgs = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 100,
-          overrideAccess: true,
-        })
-        const ids = (orgs?.docs ?? []).map((o: any) => o.id)
-        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-        if (membershipId && !ids.includes(membershipId)) ids.push(membershipId)
-        if (ids.length === 0) return false
-        return { owner: { in: ids } } as any
-      } catch {
-        return false
-      }
+      
+      // Editors/Organizers may update only locations belonging to their organizations
+      const orgIds = await getUserOrganizationIds(req)
+      if (orgIds.length === 0) return false
+      
+      // Location must have at least one of user's organizations
+      return { 'organizations.id': { in: orgIds } } as any
     },
     delete: async ({ req }: { req: PayloadRequest }) => {
       const user = req.user as any
       if (!user) return false
       if (user.role === 'admin') return true
-      try {
-        const orgs = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 100,
-          overrideAccess: true,
-        })
-        const ids = (orgs?.docs ?? []).map((o: any) => o.id)
-        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-        if (membershipId && !ids.includes(membershipId)) ids.push(membershipId)
-        if (ids.length === 0) return false
-        return { owner: { in: ids } } as any
-      } catch {
-        return false
-      }
+      
+      const orgIds = await getUserOrganizationIds(req)
+      if (orgIds.length === 0) return false
+      
+      return { 'organizations.id': { in: orgIds } } as any
     },
   },
   fields: [
     {
-      name: 'owner',
+      name: 'organizations',
       type: 'relationship',
       relationTo: 'organizations',
-      label: 'Besitzende Organisation',
+      hasMany: true,
+      label: 'Organisationen',
       required: true,
       admin: {
-        description: 'Organisation, der dieser Ort gehört. Wird bei Nicht-Admins automatisch gesetzt.',
+        description: 'Organisationen, die diesen Ort verwalten können. Benutzer sehen nur Orte ihrer Organisationen.',
       },
     },
     {
@@ -167,28 +172,16 @@ const Locations: CollectionConfig = {
         if (!user) return data
 
         if (operation === 'create' && user.role !== 'admin') {
-          // Force owner to one of the user's organizations
-          try {
-            const orgs = await req.payload.find({
-              collection: 'organizations',
-              where: { owner: { equals: user.id } } as any,
-              limit: 1,
-              overrideAccess: true,
-            })
-            const orgId = orgs?.docs?.[0]?.id
-            const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-            const candidate = membershipId || orgId
-            if (candidate) {
-              data.owner = candidate
-            }
-          } catch {
-            // ignore
+          // Force organizations to the user's organizations
+          const userOrgIds = await getUserOrganizationIds(req)
+          if (userOrgIds.length > 0 && (!data.organizations || data.organizations.length === 0)) {
+            data.organizations = userOrgIds
           }
         }
 
-        // When non-admin updating, prevent owner re-assignment
+        // When non-admin updating, prevent organizations re-assignment
         if (operation === 'update' && user.role !== 'admin') {
-          if (data && 'owner' in data) delete (data as any).owner
+          if (data && 'organizations' in data) delete (data as any).organizations
         }
 
         return data

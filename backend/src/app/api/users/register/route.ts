@@ -228,7 +228,7 @@ export async function POST(request: Request) {
           role: 'organizer',
         },
       })
-      // Set user's organization to the newly created organization
+      // Set user's organizations to include the newly created organization
       try {
         const orgs = await payload.find({
           collection: 'organizations',
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
           await payload.update({
             collection: 'users',
             id: createdUser.id as string,
-            data: { organization: orgId, role: safeRole },
+            data: { organizations: [orgId], role: safeRole },
             overrideAccess: true,
             user: { id: 'system-register-org', role: 'admin' } as any,
           })

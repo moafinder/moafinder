@@ -33,7 +33,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'name', 'role', 'emailVerified', 'disabled', 'organization'],
+    defaultColumns: ['email', 'name', 'role', 'organizations', 'emailVerified', 'disabled'],
   },
   auth: {
     cookies: {
@@ -96,11 +96,15 @@ export const Users: CollectionConfig = {
   },
   fields: [
     {
-      name: 'organization',
-      label: 'Organisation',
+      name: 'organizations',
+      label: 'Organisationen',
       type: 'relationship',
       relationTo: 'organizations',
+      hasMany: true,
       required: false,
+      admin: {
+        description: 'Organisationen, denen dieser Benutzer angehört. Bestimmt welche Orte zur Veranstaltungserstellung verfügbar sind.',
+      },
       access: {
         update: ({ req }) => req.user?.role === 'admin',
       },

@@ -5,19 +5,28 @@ const Organizations: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'approved', 'createdAt'],
+    description: 'Organisationen verwalten Veranstaltungsorte und Benutzer. Jeder Benutzer und jeder Ort kann mehreren Organisationen zugeordnet sein.',
   },
   access: {
     read: () => true,
-    create: ({ req }: { req: PayloadRequest }) => !!req.user,
+    create: ({ req }: { req: PayloadRequest }) => {
+      // Only admins can create organizations
+      return req.user?.role === 'admin'
+    },
     update: ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false
       if (user.role === 'admin' || user.role === 'editor') return true
+      // Organization owners can update their own org
       return {
         owner: {
           equals: user.id,
         },
       } as any
+    },
+    delete: ({ req }: { req: PayloadRequest }) => {
+      // Only admins can delete organizations
+      return req.user?.role === 'admin'
     },
   },
   fields: [
@@ -25,9 +34,10 @@ const Organizations: CollectionConfig = {
       name: 'owner',
       type: 'relationship',
       relationTo: 'users',
-      required: true,
+      required: false,
+      label: 'Eigentümer',
       admin: {
-        readOnly: true,
+        description: 'Benutzer, der diese Organisation verwaltet (optional).',
       },
     },
     {

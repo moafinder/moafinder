@@ -1,6 +1,38 @@
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig, PayloadRequest, Payload } from 'payload'
 
 import { resolveRecipientsFromEnv, sendEmail } from '../lib/email'
+
+// Helper function to get all organization IDs a user belongs to
+async function getUserOrgIds(user: any, payload: Payload): Promise<string[]> {
+  if (!user) return []
+  const orgIds: string[] = []
+  
+  // Get organizations from user.organizations (array relationship)
+  if (user.organizations) {
+    const orgs = Array.isArray(user.organizations) ? user.organizations : [user.organizations]
+    for (const org of orgs) {
+      const orgId = typeof org === 'object' ? org?.id : org
+      if (orgId) orgIds.push(orgId)
+    }
+  }
+  
+  // Also include organizations the user owns
+  try {
+    const owned = await payload.find({
+      collection: 'organizations',
+      where: { owner: { equals: user.id } } as any,
+      limit: 100,
+      overrideAccess: true,
+    })
+    for (const org of owned?.docs ?? []) {
+      if (!orgIds.includes(org.id)) orgIds.push(org.id)
+    }
+  } catch {
+    // ignore
+  }
+  
+  return orgIds
+}
 
 const Events: CollectionConfig = {
   slug: 'events',
@@ -22,20 +54,7 @@ const Events: CollectionConfig = {
       }
       if (user.role === 'admin') return true
       // Organizer/Editor: approved or events from their organization(s)
-      let orgIds: string[] = []
-      try {
-        const owned = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 100,
-          overrideAccess: true,
-        })
-        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
-        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
-      } catch {
-        // ignore
-      }
+      const orgIds = await getUserOrgIds(user, req.payload)
       return {
         or: [
           { and: [{ status: { equals: 'approved' } }, notExpired] },
@@ -64,40 +83,14 @@ const Events: CollectionConfig = {
       const { user } = req
       if (!user) return false
       if (user.role === 'admin') return true
-      let orgIds: string[] = []
-      try {
-        const owned = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 100,
-          overrideAccess: true,
-        })
-        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
-        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
-      } catch (_ignore) {
-        // noop
-      }
+      const orgIds = await getUserOrgIds(user, req.payload)
       return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
     },
     delete: async ({ req }: { req: PayloadRequest }) => {
       const { user } = req
       if (!user) return false
       if (user.role === 'admin') return true
-      let orgIds: string[] = []
-      try {
-        const owned = await req.payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: user.id } } as any,
-          limit: 100,
-          overrideAccess: true,
-        })
-        orgIds = (owned?.docs ?? []).map((o: any) => o.id)
-        const membershipId = typeof (user as any).organization === 'object' ? (user as any).organization?.id : (user as any).organization
-        if (membershipId && !orgIds.includes(membershipId)) orgIds.push(membershipId)
-      } catch (_ignore) {
-        // noop
-      }
+      const orgIds = await getUserOrgIds(user, req.payload)
       return orgIds.length ? ({ organizer: { in: orgIds } } as any) : false
     },
   },
@@ -255,6 +248,30 @@ const Events: CollectionConfig = {
       relationTo: 'locations',
       required: true,
       label: 'Veranstaltungsort',
+      // Filter locations based on user's organizations (non-admins only see their org's locations)
+      filterOptions: async ({ user }) => {
+        // Admins can see all locations
+        if (!user || user.role === 'admin') return true
+        
+        // Get user's organization IDs from the organizations array
+        const orgIds: string[] = []
+        if ((user as any).organizations) {
+          const orgs = Array.isArray((user as any).organizations) ? (user as any).organizations : [(user as any).organizations]
+          for (const org of orgs) {
+            const orgId = typeof org === 'object' ? org?.id : org
+            if (orgId) orgIds.push(orgId)
+          }
+        }
+        
+        if (orgIds.length === 0) {
+          return { id: { equals: '___never___' } } as any
+        }
+        
+        // Filter locations that belong to any of the user's organizations
+        return {
+          organizations: { in: orgIds }
+        } as any
+      },
     },
     {
       name: 'organizer',
@@ -289,11 +306,16 @@ const Events: CollectionConfig = {
             const user = req.user as any
             if (!user) return value
             
-            // For non-admin users, auto-assign their organization
+            // For non-admin users, auto-assign their first organization
             if (user.role !== 'admin' && operation === 'create') {
-              let organizerId = typeof user.organization === 'object' 
-                ? user.organization?.id 
-                : user.organization
+              // Get first organization from user.organizations array
+              let organizerId: string | undefined
+              if (user.organizations) {
+                const orgs = Array.isArray(user.organizations) ? user.organizations : [user.organizations]
+                if (orgs.length > 0) {
+                  organizerId = typeof orgs[0] === 'object' ? orgs[0]?.id : orgs[0]
+                }
+              }
               
               if (!organizerId) {
                 // Try to find an organization they own
