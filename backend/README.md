@@ -2,6 +2,72 @@
 
 This template comes configured with the bare minimum to get started on anything you need.
 
+## Data Model & Permissions Overview
+
+MoaFinder uses a multi-organization architecture where **Users**, **Locations**, and **Events** are linked through **Organizations**.
+
+### User Roles
+
+| Role | Description |
+|------|-------------|
+| **admin** | Full access. Can manage all users, orgs, locations, events, approve orgs, and delete anything. |
+| **editor** | Can approve organizations and events. Similar to admin but cannot delete organizations or change user roles. |
+| **organizer** | Default role for new users. Can create/manage events and locations only within their own organizations. |
+
+### Organizations
+
+- **All authenticated users** can *create* a new organization, but it starts as **unapproved**.
+- Only **admin** or **editor** can flip the `approved` flag to `true`.
+- Once approved, the organization's members can create events and manage locations linked to it.
+- Users can **request membership** to an existing organization; admin/editor then approves or rejects.
+- The **owner** (the user who created the org) is automatically added to its member list.
+- An organization can have any number of members, and a user can belong to multiple organizations.
+
+### Locations
+
+- Locations are **shared resources** that can belong to **multiple organizations**.
+- **admin** can CRUD all locations.
+- **organizer/editor** can create locations only if they belong to at least one organization, and can update/delete only locations linked to one of their organizations.
+- When creating an event, the location dropdown is **filtered** to show only locations from the user's organizations (except for admins, who see all).
+
+### Events
+
+| Action | Who can do it |
+|--------|---------------|
+| Create event (draft/pending) | Any authenticated organizer (if they have an org) |
+| Create event (approved) | admin, editor only |
+| Update/Delete own org events | organizer, editor, admin |
+| Approve events | editor, admin |
+| Read approved & non-expired | Everyone (public) |
+
+- Events have a `status` field: `draft`, `pending`, `approved`.
+- Non-admin users submit as `draft` or `pending`; only editor/admin may set `approved`.
+- The **organizer** field on an event is a relationship to the Organization (not the user). This links events to the org whose members may manage it.
+
+### Internal Data Flow
+
+```
+User ──┬──< organizations (hasMany) >──┬── Organization
+       │                               │
+       │  ┌────────────────────────────┘
+       │  │
+       │  └── owner ──> User (who created it)
+       │
+Location ──< organizations (hasMany) >── Organization
+       │
+Event ──< organizer >── Organization
+       ├──< location >── Location
+       └── status (draft | pending | approved)
+```
+
+**Key points**:
+1. A user's `organizations` array determines what locations/events they can manage.
+2. Locations require at least one organization; they become available to all members of those orgs.
+3. Events tie to an organizer org; the location dropdown filters by that user's orgs.
+4. Organizations must be approved before their events can be approved.
+
+---
+
 ## Quick start
 
 This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
