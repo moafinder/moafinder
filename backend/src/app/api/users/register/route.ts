@@ -217,42 +217,8 @@ export async function POST(request: Request) {
   }
 
   if (createdUser) {
-    try {
-      await payload.create({
-        collection: 'organizations',
-        data: {
-          owner: createdUser.id,
-          name: parsed.data.name,
-          email: parsed.data.email,
-          contactPerson: parsed.data.name,
-          role: 'organizer',
-        },
-      })
-      // Set user's organizations to include the newly created organization
-      try {
-        const orgs = await payload.find({
-          collection: 'organizations',
-          where: { owner: { equals: createdUser.id } } as any,
-          limit: 1,
-          overrideAccess: true,
-        })
-        const orgId = orgs?.docs?.[0]?.id
-        if (orgId) {
-          const safeRole = (createdUser as any)?.role === 'admin' || (createdUser as any)?.role === 'editor' || (createdUser as any)?.role === 'organizer' ? (createdUser as any).role : 'organizer'
-          await payload.update({
-            collection: 'users',
-            id: createdUser.id as string,
-            data: { organizations: [orgId], role: safeRole },
-            overrideAccess: true,
-            user: { id: 'system-register-org', role: 'admin' } as any,
-          })
-        }
-      } catch (_ignore) {
-        // Best-effort assignment; it's fine if this lookup fails during registration
-      }
-    } catch (error) {
-      payload.logger.error({ msg: 'Failed to create organization for new user', error, userId: createdUser.id })
-    }
+    // Note: Organizations are now created only by admins.
+    // New users start without any organization and must be assigned by an admin.
 
     // Generate email verification token, store hashed, and send verification email
     try {

@@ -115,17 +115,20 @@ const Organizations: CollectionConfig = {
       label: 'Anzahl Mitglieder',
       admin: {
         readOnly: true,
+        position: 'sidebar',
         description: 'Anzahl der Benutzer, die dieser Organisation zugeordnet sind.',
       },
       virtual: true,
       hooks: {
         afterRead: [
-          async ({ data, req }) => {
-            if (!data?.id) return 0
+          async ({ data, req, siblingData }) => {
+            // Only calculate for existing documents, not during creation
+            const docId = data?.id || siblingData?.id
+            if (!docId || !req?.payload) return 0
             try {
               const users = await req.payload.find({
                 collection: 'users',
-                where: { organizations: { contains: data.id } },
+                where: { organizations: { contains: docId } },
                 limit: 0,
                 overrideAccess: true,
               })
@@ -143,17 +146,20 @@ const Organizations: CollectionConfig = {
       label: 'Anzahl Orte',
       admin: {
         readOnly: true,
+        position: 'sidebar',
         description: 'Anzahl der Orte, die dieser Organisation zugeordnet sind.',
       },
       virtual: true,
       hooks: {
         afterRead: [
-          async ({ data, req }) => {
-            if (!data?.id) return 0
+          async ({ data, req, siblingData }) => {
+            // Only calculate for existing documents, not during creation
+            const docId = data?.id || siblingData?.id
+            if (!docId || !req?.payload) return 0
             try {
               const locations = await req.payload.find({
                 collection: 'locations',
-                where: { organizations: { contains: data.id } },
+                where: { organizations: { contains: docId } },
                 limit: 0,
                 overrideAccess: true,
               })
