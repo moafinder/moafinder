@@ -256,7 +256,10 @@ export interface Event {
   description: string;
   image?: (string | null) | Media;
   location: string | Location;
-  organizer: string | Organization;
+  /**
+   * Wähle die Organisation, die diese Veranstaltung ausrichtet.
+   */
+  organizer?: (string | null) | Organization;
   isAccessible?: boolean | null;
   cost?: {
     isFree?: boolean | null;

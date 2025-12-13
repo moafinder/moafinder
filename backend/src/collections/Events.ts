@@ -262,8 +262,56 @@ const Events: CollectionConfig = {
       relationTo: 'organizations',
       required: true,
       label: 'Veranstalter',
+      admin: {
+        description: 'Wähle die Organisation, die diese Veranstaltung ausrichtet.',
+        // For non-admins, the organizer is auto-assigned from their organization
+        condition: (data, siblingData, { user }) => {
+          // Always show for admins so they can select any organization
+          if (user?.role === 'admin') return true
+          // For non-admins: hide the field as it will be auto-populated
+          return false
+        },
+      },
+      // Field-level access: non-admins can create with organizer (auto-set by hook)
+      // but cannot update it afterwards
       access: {
+        create: () => true,
         update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
+        read: () => true,
+      },
+      // Hook to auto-populate for non-admins if not set
+      hooks: {
+        beforeValidate: [
+          async ({ value, req, operation }) => {
+            // If organizer is already set, keep it
+            if (value) return value
+            
+            const user = req.user as any
+            if (!user) return value
+            
+            // For non-admin users, auto-assign their organization
+            if (user.role !== 'admin' && operation === 'create') {
+              let organizerId = typeof user.organization === 'object' 
+                ? user.organization?.id 
+                : user.organization
+              
+              if (!organizerId) {
+                // Try to find an organization they own
+                const owned = await req.payload.find({
+                  collection: 'organizations',
+                  where: { owner: { equals: user.id } } as any,
+                  limit: 1,
+                  overrideAccess: true,
+                })
+                organizerId = owned?.docs?.[0]?.id
+              }
+              
+              return organizerId || value
+            }
+            
+            return value
+          },
+        ],
       },
     },
     {
@@ -362,25 +410,7 @@ const Events: CollectionConfig = {
         if (data && 'recurrence' in (data as any) && (data as any).recurrence === null) {
           ;(data as any).recurrence = {}
         }
-        if (operation === 'create' && user.role !== 'admin') {
-          try {
-            let organizerId = user.organization as string | undefined
-            if (!organizerId) {
-              const owned = await req.payload.find({
-                collection: 'organizations',
-                where: { owner: { equals: user.id } } as any,
-                limit: 1,
-                overrideAccess: true,
-              })
-              organizerId = owned?.docs?.[0]?.id
-            }
-            if (organizerId) {
-              data.organizer = organizerId
-            }
-          } catch (_ignore) {
-            // noop
-          }
-        }
+        // Note: organizer auto-assignment is now handled by field-level beforeValidate hook
         return data
       },
     ],
