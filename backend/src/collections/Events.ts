@@ -297,45 +297,7 @@ const Events: CollectionConfig = {
         update: ({ req }: { req: PayloadRequest }) => req.user?.role === 'admin',
         read: () => true,
       },
-      // Hook to auto-populate for non-admins if not set
-      hooks: {
-        beforeValidate: [
-          async ({ value, req, operation }) => {
-            // If organizer is already set, keep it
-            if (value) return value
-            
-            const user = req.user as any
-            if (!user) return value
-            
-            // For non-admin users, auto-assign their first organization
-            if (user.role !== 'admin' && operation === 'create') {
-              // Get first organization from user.organizations array
-              let organizerId: string | undefined
-              if (user.organizations) {
-                const orgs = Array.isArray(user.organizations) ? user.organizations : [user.organizations]
-                if (orgs.length > 0) {
-                  organizerId = typeof orgs[0] === 'object' ? orgs[0]?.id : orgs[0]
-                }
-              }
-              
-              if (!organizerId) {
-                // Try to find an organization they own
-                const owned = await req.payload.find({
-                  collection: 'organizations',
-                  where: { owner: { equals: user.id } } as any,
-                  limit: 1,
-                  overrideAccess: true,
-                })
-                organizerId = owned?.docs?.[0]?.id
-              }
-              
-              return organizerId || value
-            }
-            
-            return value
-          },
-        ],
-      },
+      // Organizer is auto-assigned by collection-level beforeValidate hook for non-admins
     },
     {
       name: 'isAccessible',
@@ -415,7 +377,43 @@ const Events: CollectionConfig = {
   ],
   hooks: {
     beforeValidate: [
-      ({ data }: { data?: any }) => {
+      async ({ data, req, operation }: { data?: any; req: PayloadRequest; operation: string }) => {
+        // Auto-assign organizer for non-admin users if not already set
+        if (operation === 'create' && data && !data.organizer) {
+          const user = req.user as any
+          if (user && user.role !== 'admin') {
+            let organizerId: string | undefined
+            
+            // Get first organization from user.organizations array
+            if (user.organizations) {
+              const orgs = Array.isArray(user.organizations) ? user.organizations : [user.organizations]
+              if (orgs.length > 0) {
+                organizerId = typeof orgs[0] === 'object' ? orgs[0]?.id : orgs[0]
+              }
+            }
+            
+            // If no org from membership, try to find one they own
+            if (!organizerId) {
+              try {
+                const owned = await req.payload.find({
+                  collection: 'organizations',
+                  where: { owner: { equals: user.id } } as any,
+                  limit: 1,
+                  overrideAccess: true,
+                })
+                organizerId = owned?.docs?.[0]?.id
+              } catch {
+                // ignore errors
+              }
+            }
+            
+            if (organizerId) {
+              data.organizer = organizerId
+            }
+          }
+        }
+        
+        // Set expiry date if not provided
         if (!data?.expiryDate) {
           const baseDate = data?.recurrence?.repeatUntil || data?.endDate || data?.startDate
           if (baseDate) {
@@ -433,7 +431,7 @@ const Events: CollectionConfig = {
         if (data && 'recurrence' in (data as any) && (data as any).recurrence === null) {
           ;(data as any).recurrence = {}
         }
-        // Note: organizer auto-assignment is now handled by field-level beforeValidate hook
+        // Note: organizer auto-assignment is handled by collection-level beforeValidate hook
         return data
       },
     ],
