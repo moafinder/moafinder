@@ -16,7 +16,6 @@ const FilterBar = ({
   const [selectedPlaces, setSelectedPlaces] = useState([]);
   const [selectedDates, setSelectedDates] = useState([]);
   const dateInputRef = useRef(null);
-  const [dateMode, setDateMode] = useState(false);
 
   const normalizedAgeGroupOptions = useMemo(
     () => ageGroupOptions.map((group) => group?.trim()).filter(Boolean),
@@ -74,48 +73,13 @@ const FilterBar = ({
 
   }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates]);
 
-  const openNativeDatePicker = () => {
-    const el = dateInputRef.current;
-    if (!el) return;
-    // Switch to native date input and try to open the picker
-    if (el.type !== 'date') {
-      try {
-        el.type = 'date';
-        setDateMode(true);
-      } catch (_) {
-        // ignore
-      }
-    }
-    try {
-      // showPicker is supported in modern browsers including iOS 16+
-      if (typeof el.showPicker === 'function') {
-        el.showPicker();
-      } else {
-        // Fallback: focus the element to trigger the native UI
-        el.focus();
-      }
-    } catch (_) {
-      // Some browsers throw if called while hidden; ignore
-      el.focus();
-    }
-  };
-
   const onDateChange = (e) => {
     const value = e.target.value;
     if (value && !selectedDates.includes(value)) {
       setSelectedDates((prev) => [...prev, value]);
     }
-    // Clear input and revert to text to keep layout stable
+    // Clear input to allow selecting the same date again or another date
     e.target.value = '';
-    // Defer to allow native UI to close gracefully
-    setTimeout(() => {
-      if (dateInputRef.current) {
-        try {
-          dateInputRef.current.type = 'text';
-        } catch (_) {}
-      }
-      setDateMode(false);
-    }, 0);
   };
 
   
@@ -306,25 +270,28 @@ const FilterBar = ({
           {/* Date selector */}
           <div>
             <div className="relative">
+              {/* Hidden native date input for the actual picker */}
               <input
                 ref={dateInputRef}
-                type="text"
-                inputMode="none"
-                placeholder={selectedDates.length > 0 ? `Termine (${selectedDates.length} ausgewählt)` : 'Termine'}
-                className={`w-full p-3 min-h-[44px] pr-12 border-2 rounded-none appearance-none focus:outline-none focus:border-brand transition-colors ${
+                type="date"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={disabled}
+                onChange={onDateChange}
+                aria-label="Datum auswählen"
+              />
+              {/* Visual display layer */}
+              <div
+                className={`w-full p-3 min-h-[44px] pr-12 border-2 rounded-none pointer-events-none ${
                   selectedDates.length > 0 ? 'border-brand bg-green-50' : 'border-black'
                 }`}
-                disabled={disabled}
-                onFocus={openNativeDatePicker}
-                onClick={openNativeDatePicker}
-                onChange={onDateChange}
-                aria-label="Termine wählen"
-                readOnly
-              />
+              >
+                <span className={selectedDates.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                  {selectedDates.length > 0 ? `Termine (${selectedDates.length} ausgewählt)` : 'Termine'}
+                </span>
+              </div>
               <button
                 type="button"
-                className="absolute top-0 right-0 h-full w-12 min-h-[44px] flex items-center justify-center cursor-pointer touch-manipulation"
-                onClick={openNativeDatePicker}
+                className="absolute top-0 right-0 h-full w-12 min-h-[44px] flex items-center justify-center cursor-pointer touch-manipulation pointer-events-none"
                 aria-label="Kalender öffnen"
                 tabIndex={-1}
               >
