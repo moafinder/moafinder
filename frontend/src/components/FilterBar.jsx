@@ -16,6 +16,7 @@ const FilterBar = ({
   const [selectedPlaces, setSelectedPlaces] = useState([]);
   const [selectedDates, setSelectedDates] = useState([]);
   const dateInputRef = useRef(null);
+  const [pendingDate, setPendingDate] = useState('');
 
   const normalizedAgeGroupOptions = useMemo(
     () => ageGroupOptions.map((group) => group?.trim()).filter(Boolean),
@@ -74,12 +75,17 @@ const FilterBar = ({
   }, [ageGroups, inclusion, free, eventType, selectedThemes, selectedPlaces, selectedDates]);
 
   const onDateChange = (e) => {
-    const value = e.target.value;
-    if (value && !selectedDates.includes(value)) {
-      setSelectedDates((prev) => [...prev, value]);
+    setPendingDate(e.target.value);
+  };
+
+  const addPendingDate = () => {
+    if (pendingDate && !selectedDates.includes(pendingDate)) {
+      setSelectedDates((prev) => [...prev, pendingDate]);
     }
-    // Clear input to allow selecting the same date again or another date
-    e.target.value = '';
+    setPendingDate('');
+    if (dateInputRef.current) {
+      dateInputRef.current.value = '';
+    }
   };
 
   
@@ -269,38 +275,48 @@ const FilterBar = ({
 
           {/* Date selector */}
           <div>
-            <div className="relative">
-              {/* Hidden native date input for the actual picker */}
-              <input
-                ref={dateInputRef}
-                type="date"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={disabled}
-                onChange={onDateChange}
-                aria-label="Datum auswählen"
-              />
-              {/* Visual display layer */}
-              <div
-                className={`w-full p-3 min-h-[44px] pr-12 border-2 rounded-none pointer-events-none ${
-                  selectedDates.length > 0 ? 'border-brand bg-green-50' : 'border-black'
-                }`}
-              >
-                <span className={selectedDates.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                  {selectedDates.length > 0 ? `Termine (${selectedDates.length} ausgewählt)` : 'Termine'}
-                </span>
+            <div className="relative flex">
+              <div className="relative flex-1">
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={pendingDate}
+                  className={`w-full p-3 pl-10 min-h-[44px] border-2 border-r-0 rounded-none focus:outline-none focus:border-brand transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer ${
+                    selectedDates.length > 0 || pendingDate ? 'border-brand bg-green-50' : 'border-black'
+                  }`}
+                  disabled={disabled}
+                  onChange={onDateChange}
+                  aria-label="Datum auswählen"
+                />
+                {/* Calendar icon */}
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                {/* Show count badge when dates are selected */}
+                {selectedDates.length > 0 && !pendingDate && (
+                  <div className="absolute top-1 right-1 bg-brand text-white text-xs font-bold px-2 py-0.5 rounded pointer-events-none">
+                    {selectedDates.length}
+                  </div>
+                )}
               </div>
+              {/* Add button */}
               <button
                 type="button"
-                className="absolute top-0 right-0 h-full w-12 min-h-[44px] flex items-center justify-center cursor-pointer touch-manipulation pointer-events-none"
-                aria-label="Kalender öffnen"
-                tabIndex={-1}
+                onClick={addPendingDate}
+                disabled={!pendingDate || disabled}
+                className={`px-4 min-h-[44px] border-2 rounded-none font-semibold transition-colors ${
+                  pendingDate
+                    ? 'bg-brand border-brand text-white hover:bg-green-600'
+                    : 'bg-gray-100 border-black text-gray-400 cursor-not-allowed'
+                }`}
+                aria-label="Datum hinzufügen"
               >
-                <svg className="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
+                +
               </button>
             </div>
             {selectedDates.length > 0 && (
