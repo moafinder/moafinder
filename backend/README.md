@@ -43,6 +43,10 @@ MoaFinder uses a multi-organization architecture where **Users**, **Locations**,
 - Events have a `status` field: `draft`, `pending`, `approved`.
 - Non-admin users submit as `draft` or `pending`; only editor/admin may set `approved`.
 - The **organizer** field on an event is a relationship to the Organization (not the user). This links events to the org whose members may manage it.
+- **Organizer auto-assignment**: When creating an event:
+  - Users with **1 organization**: organizer is auto-assigned silently (no dropdown shown)
+  - Users with **multiple organizations**: a "Veranstalter" dropdown appears to choose which org hosts the event
+  - Backend fallback: if no organizer is provided, the first organization is auto-assigned
 
 ### Internal Data Flow
 
