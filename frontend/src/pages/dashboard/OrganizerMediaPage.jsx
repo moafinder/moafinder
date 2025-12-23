@@ -3,6 +3,7 @@ import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
+import { HelpSection } from '../../components/HelpTooltip';
 
 const OrganizerMediaPage = () => {
   const { user } = useAuth();
@@ -334,6 +335,28 @@ const OrganizerMediaPage = () => {
           Lade neue Bilder hoch und lösche nicht mehr benötigte Dateien. Achte darauf, aussagekräftige Alt-Texte zu vergeben.
         </p>
       </div>
+
+      {/* Help section explaining media management */}
+      <HelpSection title="Wie funktioniert die Bildverwaltung?">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">Bilder hochladen:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Jedes Bild muss einer <strong>Organisation zugeordnet</strong> werden.</li>
+              <li>Nur Mitglieder dieser Organisation können das Bild für ihre Veranstaltungen verwenden.</li>
+              <li>Der <strong>Alt-Text</strong> beschreibt das Bild für Screenreader und SEO – bitte aussagekräftig ausfüllen.</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Wichtige Hinweise:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Unterstützte Formate: JPG, PNG, WebP, GIF</li>
+              <li>Bilder werden automatisch in verschiedenen Größen gespeichert.</li>
+              <li>Gelöschte Bilder können nicht wiederhergestellt werden.</li>
+            </ul>
+          </div>
+        </div>
+      </HelpSection>
 
       <section className="rounded-xl bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Neues Bild hochladen</h2>

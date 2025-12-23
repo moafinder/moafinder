@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
 import { withAuthHeaders } from '../../utils/authHeaders';
+import { HelpSection } from '../../components/HelpTooltip';
 
 const statusOptions = [
   { value: 'all', label: 'Alle' },
@@ -96,6 +97,32 @@ const EditorOrganizationsPage = () => {
           Prüfe neue Veranstalterprofile, vergebe Freigaben und pflege die Stammdaten der Organisationen.
         </p>
       </header>
+
+      {/* Help section for editors/admins */}
+      <HelpSection title="Organisationen verwalten (Redaktion)">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">Freigabeprozess:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Neue Organisationen starten mit Status <strong>"Freigabe ausstehend"</strong>.</li>
+              <li>Nach Prüfung der Daten kannst du die Organisation <strong>freigeben</strong>.</li>
+              <li>Erst nach Freigabe können Veranstaltungen der Organisation veröffentlicht werden.</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Was prüfen?</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Ist die Organisation real und in Moabit aktiv?</li>
+              <li>Sind die Kontaktdaten vollständig und plausibel?</li>
+              <li>Gibt es bereits einen Eintrag für diese Organisation?</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Freigabe zurücknehmen:</strong>
+            <p className="mt-1">Du kannst die Freigabe jederzeit zurücknehmen. Die Veranstaltungen der Organisation werden dann nicht mehr öffentlich angezeigt.</p>
+          </div>
+        </div>
+      </HelpSection>
 
       <div className="grid gap-4 md:grid-cols-2">
         <SummaryCard label="Freigabe ausstehend" value={counts.pending ?? 0} active={activeFilter === 'pending'} onClick={() => setActiveFilter('pending')} />

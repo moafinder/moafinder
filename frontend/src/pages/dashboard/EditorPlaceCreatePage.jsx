@@ -5,6 +5,7 @@ import { buildApiUrl } from '../../api/baseUrl';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { useAuth } from '../../context/AuthContext';
 import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
+import { HelpSection } from '../../components/HelpTooltip';
 
 const EditorPlaceCreatePage = () => {
   const navigate = useNavigate();
@@ -171,6 +172,34 @@ const EditorPlaceCreatePage = () => {
         <h1 className="text-3xl font-bold text-gray-900">Neuer Veranstaltungsort</h1>
         <p className="text-sm text-gray-600">Lege einen neuen Ort an, der anschließend in der Karte und bei Veranstaltungen auswählbar ist.</p>
       </header>
+
+      {/* Help section explaining location creation */}
+      <HelpSection title="Wie funktioniert die Orterstellung?">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">Was ist ein Veranstaltungsort?</strong>
+            <p className="mt-1">Orte sind Adressen, an denen Veranstaltungen stattfinden können. Einmal angelegt, können sie für beliebig viele Veranstaltungen wiederverwendet werden.</p>
+          </div>
+          <div>
+            <strong className="text-blue-800">Organisation(en) zuweisen:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Jeder Ort muss <strong>mindestens einer Organisation</strong> zugeordnet werden.</li>
+              <li>Nur Mitglieder dieser Organisationen können den Ort für ihre Veranstaltungen nutzen.</li>
+              <li>Ein Ort kann mehreren Organisationen gehören (z.B. gemeinsam genutzte Räume).</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Koordinaten (optional):</strong>
+            <p className="mt-1">Die Kartenposition wird für die Anzeige auf der Moabit-Karte verwendet. Die Koordinaten (lat/lon) sind für externe Kartendienste gedacht.</p>
+          </div>
+          {user?.role === 'admin' && (
+            <div className="mt-2 rounded bg-blue-100 p-2">
+              <strong className="text-blue-800">Als Admin:</strong>
+              <span className="ml-1">Du siehst alle Organisationen und kannst Orte für jede Organisation anlegen.</span>
+            </div>
+          )}
+        </div>
+      </HelpSection>
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 

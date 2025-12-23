@@ -5,6 +5,7 @@ import { de } from 'date-fns/locale';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
 import { withAuthHeaders } from '../../utils/authHeaders';
+import { HelpSection } from '../../components/HelpTooltip';
 
 const StatCard = ({ label, value, description }) => (
   <div className="rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -107,6 +108,30 @@ const OrganizerDashboardPage = () => {
           Hier findest du einen Überblick über deine aktuellen Veranstaltungen, Entwürfe und anstehenden Aufgaben.
         </p>
       </header>
+
+      {/* Getting started help for new users */}
+      <HelpSection title="Erste Schritte im MoaFinder">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">So veröffentlichst du eine Veranstaltung:</strong>
+            <ol className="mt-1 ml-4 list-decimal space-y-1">
+              <li><strong>Organisation anlegen:</strong> Gehe zu "Profil der Organisation" und fülle deine Daten aus.</li>
+              <li><strong>Freigabe abwarten:</strong> Die Redaktion prüft deine Organisation (meist innerhalb 1-2 Tagen).</li>
+              <li><strong>Bilder hochladen:</strong> Unter "Event-Bilder" kannst du Bilder für deine Veranstaltungen hochladen.</li>
+              <li><strong>Veranstaltung erstellen:</strong> Klicke auf "Neue Veranstaltung anlegen" und fülle das Formular aus.</li>
+              <li><strong>Einreichen:</strong> Sende die Veranstaltung zur Prüfung – nach Freigabe ist sie öffentlich.</li>
+            </ol>
+          </div>
+          <div>
+            <strong className="text-blue-800">Status-Übersicht:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li><strong>Entwurf:</strong> Nur für dich sichtbar, noch nicht eingereicht.</li>
+              <li><strong>Freigabe ausstehend:</strong> Eingereicht, wartet auf Prüfung durch Redaktion.</li>
+              <li><strong>Aktiv:</strong> Freigegeben und öffentlich sichtbar im MoaFinder.</li>
+            </ul>
+          </div>
+        </div>
+      </HelpSection>
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">

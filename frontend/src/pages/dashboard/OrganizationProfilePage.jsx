@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
 import { withAuthHeaders } from '../../utils/authHeaders';
+import { HelpSection } from '../../components/HelpTooltip';
 
 const emptyOrganization = {
   id: null,
@@ -191,6 +192,28 @@ const OrganizationProfilePage = () => {
           <p>{organization.approved ? 'Freigegeben durch Redaktion' : 'Freigabe ausstehend'}</p>
         </div>
       </div>
+
+      {/* Help section explaining organization management */}
+      <HelpSection title="Was ist eine Organisation?">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">Über Organisationen:</strong>
+            <p className="mt-1">Eine Organisation ist der Veranstalter hinter deinen Events. Alle Veranstaltungen, Orte und Bilder sind einer Organisation zugeordnet.</p>
+          </div>
+          <div>
+            <strong className="text-blue-800">Freigabeprozess:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Neue Organisationen müssen von der <strong>Redaktion freigegeben</strong> werden.</li>
+              <li>Erst nach Freigabe können deine Veranstaltungen veröffentlicht werden.</li>
+              <li>Der aktuelle Status wird oben rechts angezeigt.</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Kontaktdaten:</strong>
+            <p className="mt-1">Die hier eingegebenen Informationen können öffentlich im MoaFinder angezeigt werden. Bitte halte sie aktuell.</p>
+          </div>
+        </div>
+      </HelpSection>
 
       {loading ? (
         <div className="rounded-md border border-gray-200 bg-white p-6 text-sm text-gray-600">Lade Organisation …</div>

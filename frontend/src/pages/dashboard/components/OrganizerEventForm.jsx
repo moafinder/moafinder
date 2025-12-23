@@ -5,6 +5,7 @@ import { listMyOrganizations, listAllOrganizations } from '../../../api/organiza
 import { buildApiUrl } from '../../../api/baseUrl';
 import { useAuth } from '../../../context/AuthContext';
 import { withAuthHeaders } from '../../../utils/authHeaders';
+import HelpTooltip, { HelpSection } from '../../../components/HelpTooltip';
 
 const EVENT_TYPE_OPTIONS = [
   { label: 'Einmalig', value: 'einmalig' },
@@ -401,6 +402,36 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
 
   return (
     <div className="space-y-6">
+      {/* Help section explaining the event creation process */}
+      <HelpSection title="Wie funktioniert die Veranstaltungserstellung?">
+        <div className="space-y-3">
+          <div>
+            <strong className="text-blue-800">Veröffentlichungsprozess:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li><strong>Als Entwurf speichern:</strong> Die Veranstaltung wird gespeichert, ist aber nicht öffentlich sichtbar. Du kannst sie später bearbeiten.</li>
+              <li><strong>Zur Prüfung einreichen:</strong> Die Veranstaltung wird an die Redaktion zur Freigabe gesendet. Nach der Freigabe ist sie öffentlich sichtbar.</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-blue-800">Wichtige Hinweise:</strong>
+            <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li>Du kannst nur <strong>Orte und Bilder deiner Organisation(en)</strong> verwenden.</li>
+              {userOrganizations.length > 1 && (
+                <li>Da du mehreren Organisationen angehörst, wähle bitte den <strong>Veranstalter</strong> aus.</li>
+              )}
+              <li>Die Veranstaltung wird automatisch deiner Organisation zugeordnet.</li>
+              <li>Pflichtfelder sind mit einem Sternchen (*) gekennzeichnet.</li>
+            </ul>
+          </div>
+          {user?.role === 'admin' || user?.role === 'editor' ? (
+            <div className="mt-2 rounded bg-blue-100 p-2">
+              <strong className="text-blue-800">Als {user?.role === 'admin' ? 'Admin' : 'Redakteur'}:</strong>
+              <span className="ml-1">Du kannst Veranstaltungen direkt freigeben, ohne den Prüfungsprozess.</span>
+            </div>
+          ) : null}
+        </div>
+      </HelpSection>
+
       {noOrgsWarning && (
         <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-700">
           <strong>Hinweis:</strong> Sie sind keiner Organisation zugeordnet. Sie können keine Orte oder Bilder auswählen, die einer Organisation gehören. Bitte kontaktieren Sie einen Administrator.
