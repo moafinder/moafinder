@@ -87,7 +87,7 @@ DEFAULT_PROFILE="moafinder-prod"
 if [[ -n "$PROFILE" ]]; then
   export AWS_PROFILE="$PROFILE"
   echo "Using AWS profile: $AWS_PROFILE"
-elif [[ -n "$AWS_PROFILE" ]]; then
+elif [[ -n "${AWS_PROFILE:-}" ]]; then
   echo "Using AWS profile from environment: $AWS_PROFILE"
 else
   export AWS_PROFILE="$DEFAULT_PROFILE"
