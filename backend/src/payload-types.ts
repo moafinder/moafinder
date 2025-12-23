@@ -211,12 +211,22 @@ export interface Organization {
   createdAt: string;
 }
 /**
+ * Bilder für Veranstaltungen und Orte. Jedes Bild gehört zu einer Organisation.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: string;
+  /**
+   * Dieses Bild gehört zu dieser Organisation. Nur Mitglieder können es verwenden.
+   */
+  organization: string | Organization;
+  organizationName?: string | null;
   owner: string | User;
+  /**
+   * Beschreibender Text für Barrierefreiheit und SEO.
+   */
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -623,6 +633,8 @@ export interface TagsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  organization?: T;
+  organizationName?: T;
   owner?: T;
   alt?: T;
   updatedAt?: T;
