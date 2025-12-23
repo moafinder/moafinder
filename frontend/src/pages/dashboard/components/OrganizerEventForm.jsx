@@ -28,6 +28,7 @@ const defaultForm = {
   title: '',
   subtitle: '',
   description: '',
+  organizer: '', // Organization hosting the event
   eventType: 'einmalig',
   // Simplified time inputs
   firstDate: '', // YYYY-MM-DD
@@ -135,6 +136,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       title: initialEvent.title ?? '',
       subtitle: initialEvent.subtitle ?? '',
       description: initialEvent.description ?? '',
+      organizer: typeof initialEvent.organizer === 'object' ? initialEvent.organizer?.id : initialEvent.organizer ?? '',
       eventType: initialEvent.eventType ?? 'einmalig',
       // First occurrence date/time
       firstDate: initialEvent.startDate ? new Date(initialEvent.startDate).toISOString().slice(0, 10) : '',
@@ -202,6 +204,11 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         
         if (orgs.length === 0 && user?.role !== 'admin') {
           setNoOrgsWarning(true);
+        }
+        
+        // Auto-select organizer if user has exactly one org
+        if (orgs.length === 1) {
+          setForm((prev) => ({ ...prev, organizer: orgs[0].id }));
         }
 
         const [locationsRes, tagsRes, mediaRes] = await Promise.all([
@@ -375,6 +382,12 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         status,
       };
 
+      // Include organizer if user selected one (for multi-org users)
+      // Backend will auto-assign if not provided (single-org users)
+      if (form.organizer) {
+        payload.organizer = form.organizer;
+      }
+
       await onSubmit(payload, status);
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -412,6 +425,19 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
             value={form.subtitle}
             onChange={(value) => handleChange('subtitle', value)}
           />
+          {/* Show organizer selector only if user has multiple organizations */}
+          {userOrganizations.length > 1 && (
+            <SelectField
+              label="Veranstalter (Organisation)"
+              value={form.organizer}
+              onChange={(value) => handleChange('organizer', value)}
+              placeholder="Organisation auswählen"
+              options={userOrganizations.map((org) => ({
+                label: org.name,
+                value: org.id,
+              }))}
+            />
+          )}
           <SelectField
             label="Art der Veranstaltung"
             value={form.eventType}
