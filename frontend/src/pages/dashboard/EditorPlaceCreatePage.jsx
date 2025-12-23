@@ -4,6 +4,7 @@ import { createLocation } from '../../api/locations';
 import { buildApiUrl } from '../../api/baseUrl';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { useAuth } from '../../context/AuthContext';
+import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
 
 const EditorPlaceCreatePage = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const EditorPlaceCreatePage = () => {
     mapPosition: { x: '', y: '' },
     coordinates: { lat: '', lon: '' },
     openingHours: '',
-    owner: '',
+    organizations: [], // Changed from owner to organizations (array)
   });
   const [media, setMedia] = useState([]);
   const [organizations, setOrganizations] = useState([]);
@@ -25,6 +26,7 @@ const EditorPlaceCreatePage = () => {
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [noOrgsWarning, setNoOrgsWarning] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -45,29 +47,29 @@ const EditorPlaceCreatePage = () => {
     }
     async function loadOrganizations() {
       setLoadingOrgs(true);
+      setNoOrgsWarning(false);
       try {
-        let qs = '';
-        if (user?.role === 'admin') {
-          qs = new URLSearchParams({ limit: '200', sort: 'name' }).toString();
-        } else if (user?.id) {
-          const params = new URLSearchParams();
-          // include membership via user.organization and owned orgs
-          if (user.organization) params.append('where[id][equals]', user.organization);
-          params.append('or[0][owner][equals]', user.id);
-          params.set('limit', '50');
-          qs = params.toString();
-        }
-        const url = qs ? `/api/organizations?${qs}` : '/api/organizations?limit=0';
-        const res = await fetch(buildApiUrl(url), { credentials: 'include', headers: withAuthHeaders() });
-        const data = await res.json();
+        // Admin sees all orgs, others see only their own
+        const data = user?.role === 'admin' 
+          ? await listAllOrganizations({ limit: 200 })
+          : await listMyOrganizations();
         const orgs = Array.isArray(data?.docs) ? data.docs : [];
-        if (mounted) setOrganizations(orgs);
-        // If non-admin has exactly one org, preselect
-        if (mounted && user?.role !== 'admin' && orgs.length === 1) {
-          setForm((prev) => ({ ...prev, owner: orgs[0].id }));
+        if (mounted) {
+          setOrganizations(orgs);
+          // If non-admin has no orgs, show warning
+          if (user?.role !== 'admin' && orgs.length === 0) {
+            setNoOrgsWarning(true);
+          }
+          // If non-admin has exactly one org, preselect it
+          if (user?.role !== 'admin' && orgs.length === 1) {
+            setForm((prev) => ({ ...prev, organizations: [orgs[0].id] }));
+          }
         }
       } catch {
-        if (mounted) setOrganizations([]);
+        if (mounted) {
+          setOrganizations([]);
+          if (user?.role !== 'admin') setNoOrgsWarning(true);
+        }
       } finally {
         if (mounted) setLoadingOrgs(false);
       }
@@ -125,8 +127,13 @@ const EditorPlaceCreatePage = () => {
         },
         openingHours: form.openingHours || undefined,
       };
-      if ((user?.role === 'admin' || organizations.length > 1) && form.owner) {
-        payload.owner = form.owner;
+      
+      // Set organizations (required field)
+      if (form.organizations && form.organizations.length > 0) {
+        payload.organizations = form.organizations;
+      } else if (organizations.length === 1) {
+        // Auto-assign the only available org
+        payload.organizations = [organizations[0].id];
       }
 
       const x = String(form.mapPosition.x).trim();
@@ -167,20 +174,32 @@ const EditorPlaceCreatePage = () => {
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
+      {/* Warning when user has no organizations */}
+      {noOrgsWarning && (
+        <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+          <strong>Hinweis:</strong> Du gehörst noch keiner Organisation an. Orte können nur von Organisationsmitgliedern angelegt werden.
+          Bitte wende dich an einen Administrator, um einer Organisation beizutreten.
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="rounded-xl bg-white p-6 shadow-sm space-y-5">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Voller Name des Ortes" required value={form.name} onChange={(v) => handleChange('name', v)} />
           <Field label="Kurzform des Ortsnamens" required value={form.shortName} onChange={(v) => handleChange('shortName', v)} maxLength={40} />
         </div>
-        {(user?.role === 'admin' || organizations.length > 1) && (
-          <Select
-            label="Besitzende Organisation"
-            value={form.owner}
-            onChange={(v) => handleChange('owner', v)}
-            placeholder={loadingOrgs ? 'Lade Organisationen …' : organizations.length ? 'Organisation wählen' : 'Keine Organisationen gefunden'}
-            options={organizations.map((o) => ({ value: o.id, label: o.name }))}
-          />
-        )}
+        
+        {/* Organization selection - required for locations */}
+        <MultiSelect
+          label="Organisationen"
+          required
+          value={form.organizations}
+          onChange={(v) => handleChange('organizations', v)}
+          placeholder={loadingOrgs ? 'Lade Organisationen …' : organizations.length ? 'Organisationen wählen' : 'Keine Organisationen verfügbar'}
+          options={organizations.map((o) => ({ value: o.id, label: o.name }))}
+          disabled={noOrgsWarning || loadingOrgs}
+          helpText="Der Ort wird diesen Organisationen zugeordnet. Nur Mitglieder können ihn verwalten."
+        />
+        
         <Textarea label="Beschreibung (max. 1000 Zeichen)" rows={4} value={form.description} onChange={(v) => handleChange('description', v)} maxLength={1000} />
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -279,5 +298,49 @@ const Select = ({ label, value, onChange, options = [], placeholder }) => (
     </select>
   </label>
 );
+
+const MultiSelect = ({ label, value = [], onChange, options = [], placeholder, disabled, helpText, required }) => {
+  const selected = Array.isArray(value) ? value : [];
+  const toggle = (id) => {
+    if (disabled) return;
+    if (selected.includes(id)) {
+      onChange(selected.filter((v) => v !== id));
+    } else {
+      onChange([...selected, id]);
+    }
+  };
+
+  return (
+    <div className="flex flex-col text-sm font-medium text-gray-700">
+      <span>{label}{required && <span className="text-red-500 ml-1">*</span>}</span>
+      {helpText && <span className="text-xs text-gray-500 mt-1">{helpText}</span>}
+      {options.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-500">{placeholder || 'Keine Optionen verfügbar'}</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {options.map((opt) => {
+            const active = selected.includes(opt.value);
+            return (
+              <button
+                type="button"
+                key={opt.value}
+                onClick={() => toggle(opt.value)}
+                disabled={disabled}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  active
+                    ? 'border-[#7CB92C] bg-[#E8F5D9] text-gray-900'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {active && <span className="mr-1">✓</span>}
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default EditorPlaceCreatePage;

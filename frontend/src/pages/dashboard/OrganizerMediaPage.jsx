@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildApiUrl } from '../../api/baseUrl';
 import { useAuth } from '../../context/AuthContext';
 import { withAuthHeaders } from '../../utils/authHeaders';
+import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
 
 const OrganizerMediaPage = () => {
   const { user } = useAuth();
@@ -10,6 +11,10 @@ const OrganizerMediaPage = () => {
   const [uploading, setUploading] = useState(false);
   const [altText, setAltText] = useState('');
   const [file, setFile] = useState(null);
+  const [selectedOrg, setSelectedOrg] = useState('');
+  const [organizations, setOrganizations] = useState([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(true);
+  const [noOrgsWarning, setNoOrgsWarning] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -122,6 +127,40 @@ const OrganizerMediaPage = () => {
     };
   }, [sortedMedia, resolveMediaUrl, getMediaKey, previewUrls]);
 
+  // Load organizations
+  useEffect(() => {
+    let mounted = true;
+    async function loadOrganizations() {
+      setLoadingOrgs(true);
+      setNoOrgsWarning(false);
+      try {
+        const data = user?.role === 'admin'
+          ? await listAllOrganizations({ limit: 200 })
+          : await listMyOrganizations();
+        const orgs = Array.isArray(data?.docs) ? data.docs : [];
+        if (mounted) {
+          setOrganizations(orgs);
+          if (user?.role !== 'admin' && orgs.length === 0) {
+            setNoOrgsWarning(true);
+          }
+          // Auto-select if only one org
+          if (orgs.length === 1) {
+            setSelectedOrg(orgs[0].id);
+          }
+        }
+      } catch {
+        if (mounted) {
+          setOrganizations([]);
+          if (user?.role !== 'admin') setNoOrgsWarning(true);
+        }
+      } finally {
+        if (mounted) setLoadingOrgs(false);
+      }
+    }
+    loadOrganizations();
+    return () => { mounted = false; };
+  }, [user]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -130,11 +169,11 @@ const OrganizerMediaPage = () => {
       setLoading(true);
       setError('');
       try {
+        // Load media from user's organizations (or all for admin)
         const params = new URLSearchParams({
-          'where[owner][equals]': user.id,
           sort: '-createdAt',
           limit: '200',
-          depth: '0',
+          depth: '1',
         });
         const response = await fetch(buildApiUrl(`/api/media?${params.toString()}`), {
           credentials: 'include',
@@ -170,6 +209,10 @@ const OrganizerMediaPage = () => {
       setError('Bitte wähle eine Datei aus und gib einen Alt-Text an.');
       return;
     }
+    if (!selectedOrg) {
+      setError('Bitte wähle eine Organisation für dieses Bild aus.');
+      return;
+    }
 
     setUploading(true);
     setError('');
@@ -178,9 +221,10 @@ const OrganizerMediaPage = () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('alt', altText.trim());
+    formData.append('organization', selectedOrg);
 
     try {
-      const response = await fetch(buildApiUrl(`/api/media?alt=${encodeURIComponent(altText.trim())}`), {
+      const response = await fetch(buildApiUrl(`/api/media?alt=${encodeURIComponent(altText.trim())}&organization=${encodeURIComponent(selectedOrg)}`), {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -299,8 +343,34 @@ const OrganizerMediaPage = () => {
         {message && (
           <div className="mt-3 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">{message}</div>
         )}
+        
+        {/* Warning when user has no organizations */}
+        {noOrgsWarning && (
+          <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+            <strong>Hinweis:</strong> Du gehörst noch keiner Organisation an. Bilder können nur von Organisationsmitgliedern hochgeladen werden.
+            Bitte wende dich an einen Administrator, um einer Organisation beizutreten.
+          </div>
+        )}
 
         <form onSubmit={handleUpload} className="mt-4 space-y-4">
+          {/* Organization selection */}
+          <label className="flex flex-col text-sm font-medium text-gray-700">
+            Organisation <span className="text-red-500">*</span>
+            <select
+              value={selectedOrg}
+              onChange={(e) => setSelectedOrg(e.target.value)}
+              disabled={loadingOrgs || noOrgsWarning}
+              required
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] disabled:opacity-50"
+            >
+              <option value="">{loadingOrgs ? 'Lade Organisationen …' : 'Organisation wählen'}</option>
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+            <span className="mt-1 text-xs text-gray-500">Das Bild wird dieser Organisation zugeordnet.</span>
+          </label>
+          
           <label className="flex flex-col text-sm font-medium text-gray-700">
             Bilddatei
             <input
@@ -309,6 +379,7 @@ const OrganizerMediaPage = () => {
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               className="mt-1"
               required
+              disabled={noOrgsWarning}
             />
           </label>
           <label className="flex flex-col text-sm font-medium text-gray-700">
@@ -318,12 +389,13 @@ const OrganizerMediaPage = () => {
               onChange={(event) => setAltText(event.target.value)}
               placeholder="Was ist auf dem Bild zu sehen?"
               required
-              className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0]"
+              disabled={noOrgsWarning}
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] disabled:opacity-50"
             />
           </label>
           <button
             type="submit"
-            disabled={uploading}
+            disabled={uploading || noOrgsWarning}
             className="rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {uploading ? 'Lade hoch …' : 'Bild hochladen'}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { listLocations } from '../../../api/locations';
 import { listTags } from '../../../api/tags';
+import { listMyOrganizations, listAllOrganizations } from '../../../api/organizations';
 import { buildApiUrl } from '../../../api/baseUrl';
 import { useAuth } from '../../../context/AuthContext';
 import { withAuthHeaders } from '../../../utils/authHeaders';
@@ -90,9 +91,39 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
   const [locations, setLocations] = useState([]);
   const [tags, setTags] = useState([]);
   const [media, setMedia] = useState([]);
+  const [userOrganizations, setUserOrganizations] = useState([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
+  const [noOrgsWarning, setNoOrgsWarning] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Get user's organization IDs for filtering
+  const userOrgIds = useMemo(() => {
+    return userOrganizations.map((org) => org.id);
+  }, [userOrganizations]);
+
+  // Filter locations to only show those belonging to user's organizations
+  const filteredLocations = useMemo(() => {
+    if (user?.role === 'admin') return locations;
+    if (userOrgIds.length === 0) return [];
+    return locations.filter((loc) => {
+      const locOrgs = loc.organizations || [];
+      return locOrgs.some((org) => {
+        const orgId = typeof org === 'object' ? org?.id : org;
+        return userOrgIds.includes(orgId);
+      });
+    });
+  }, [locations, userOrgIds, user?.role]);
+
+  // Filter media to only show those belonging to user's organizations
+  const filteredMedia = useMemo(() => {
+    if (user?.role === 'admin') return media;
+    if (userOrgIds.length === 0) return [];
+    return media.filter((item) => {
+      const orgId = typeof item.organization === 'object' ? item.organization?.id : item.organization;
+      return userOrgIds.includes(orgId);
+    });
+  }, [media, userOrgIds, user?.role]);
 
   useEffect(() => {
     if (!initialEvent) {
@@ -159,7 +190,20 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
     const loadMeta = async () => {
       setLoadingMeta(true);
       setError('');
+      setNoOrgsWarning(false);
       try {
+        // Load organizations first to check if user has any
+        const orgsFn = user?.role === 'admin' ? listAllOrganizations : listMyOrganizations;
+        const orgsRes = await orgsFn();
+        const orgs = orgsRes.docs ?? [];
+        
+        if (!mounted) return;
+        setUserOrganizations(orgs);
+        
+        if (orgs.length === 0 && user?.role !== 'admin') {
+          setNoOrgsWarning(true);
+        }
+
         const [locationsRes, tagsRes, mediaRes] = await Promise.all([
           listLocations({ limit: 200 }),
           listTags({ limit: 200 }),
@@ -344,6 +388,12 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
 
   return (
     <div className="space-y-6">
+      {noOrgsWarning && (
+        <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-700">
+          <strong>Hinweis:</strong> Sie sind keiner Organisation zugeordnet. Sie können keine Orte oder Bilder auswählen, die einer Organisation gehören. Bitte kontaktieren Sie einen Administrator.
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       )}
@@ -505,7 +555,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
               value={form.location}
               onChange={(value) => handleChange('location', value)}
               placeholder="Ort auswählen"
-              options={locations.map((location) => ({
+              options={filteredLocations.map((location) => ({
                 label: location.name,
                 value: location.id,
               }))}
@@ -522,7 +572,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
               value={form.image}
               onChange={(value) => handleChange('image', value)}
               placeholder="Bild auswählen"
-              options={media.map((item) => ({
+              options={filteredMedia.map((item) => ({
                 label: item.alt || item.filename || 'Bild',
                 value: item.id,
               }))}
