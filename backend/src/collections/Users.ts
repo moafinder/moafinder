@@ -37,6 +37,7 @@ export const Users: CollectionConfig = {
     group: 'Verwaltung',
   },
   auth: {
+    tokenExpiration: 1800, // 30 minutes in seconds
     cookies: {
       sameSite: isProduction ? 'None' : 'Lax',
       secure: isProduction,

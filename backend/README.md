@@ -66,6 +66,13 @@ Event ──< organizer >── Organization
 3. Events tie to an organizer org; the location dropdown filters by that user's orgs.
 4. Organizations must be approved before their events can be approved.
 
+### Session & Authentication
+
+- **Token expiration**: 30 minutes (server-side, configured in `Users.ts`)
+- **Inactivity timeout**: 30 minutes of no user activity (mouse, keyboard, touch, scroll) triggers automatic logout on the frontend
+- **Auto-logout on 401/403**: If the server returns a 401 or 403 response (e.g., expired token), the frontend automatically clears the session and redirects to `/login?expired=1`
+- **Session expired notice**: The login page displays a yellow warning banner when redirected due to session expiration
+
 ---
 
 ## Quick start
