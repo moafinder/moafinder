@@ -80,12 +80,18 @@ done
 TARGET="${TARGET:-production}"
 ENV_FILE="${ENV_FILE:-../env/out/${TARGET}-apprunner.env}"
 
+# Default AWS profile for this project
+DEFAULT_PROFILE="moafinder-prod"
+
 # Apply AWS profile if provided (or if already present in environment)
 if [[ -n "$PROFILE" ]]; then
   export AWS_PROFILE="$PROFILE"
   echo "Using AWS profile: $AWS_PROFILE"
 elif [[ -n "$AWS_PROFILE" ]]; then
   echo "Using AWS profile from environment: $AWS_PROFILE"
+else
+  export AWS_PROFILE="$DEFAULT_PROFILE"
+  echo "Using default AWS profile: $AWS_PROFILE"
 fi
 
 if [[ "$SKIP_APPLY" != "true" ]]; then

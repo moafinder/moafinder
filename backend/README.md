@@ -198,6 +198,41 @@ Example: update the cached App Runner domain and verify both checks in one go:
 pnpm predeploy:check --server-url https://new-id.awsapprunner.com --write-env
 ```
 
+## Deployment to AWS App Runner
+
+To deploy the backend to AWS App Runner:
+
+```bash
+cd backend
+./deploy_apprunner.sh
+```
+
+### AWS Profile Configuration
+
+The deployment script uses the **`moafinder-prod`** AWS profile by default. This profile must be configured in your `~/.aws/credentials` file:
+
+```ini
+[moafinder-prod]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY
+region = eu-central-1
+```
+
+To use a different profile, pass the `--profile` flag:
+
+```bash
+./deploy_apprunner.sh --profile my-other-profile
+```
+
+### Deployment Options
+
+| Flag | Description |
+| --- | --- |
+| `--target, -t <name>` | Target environment (default: `production`) |
+| `--profile, -p <name>` | AWS profile to use (default: `moafinder-prod`) |
+| `--skip-apply` | Skip regenerating env files |
+| `--env-file, -f <path>` | Use a specific env file |
+
 ## Utility Scripts
 
 The `scripts/` directory contains utility scripts for managing data and users:
