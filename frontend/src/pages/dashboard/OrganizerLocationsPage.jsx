@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listLocations } from '../../api/locations';
 import ListCard from './components/ListCard';
 import { getListColor } from '../../utils/colorPalette';
@@ -87,6 +88,15 @@ const OrganizerLocationsPage = () => {
                     } ${location.address.city ?? ''}`
                   : null
               }
+              actions={[
+                <Link
+                  key="edit"
+                  to={`/dashboard/places/${location.id}/edit`}
+                  className="rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Bearbeiten
+                </Link>
+              ]}
             >
               {location.description && (
                 <p className="text-sm text-gray-600 whitespace-pre-line">{location.description}</p>

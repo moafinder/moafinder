@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { listLocations } from '../../../api/locations';
 import { listTags } from '../../../api/tags';
 import { listMyOrganizations, listAllOrganizations } from '../../../api/organizations';
@@ -6,6 +6,7 @@ import { buildApiUrl } from '../../../api/baseUrl';
 import { useAuth } from '../../../context/AuthContext';
 import { withAuthHeaders } from '../../../utils/authHeaders';
 import HelpTooltip, { HelpSection } from '../../../components/HelpTooltip';
+import ImageUpload from '../../../components/ImageUpload';
 
 const EVENT_TYPE_OPTIONS = [
   { label: 'Einmalig', value: 'einmalig' },
@@ -606,33 +607,42 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         {loadingMeta ? (
           <p className="text-sm text-gray-500">Lade Orte und Tags …</p>
         ) : (
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <SelectField
-              label="Veranstaltungsort"
-              value={form.location}
-              onChange={(value) => handleChange('location', value)}
-              placeholder="Ort auswählen"
-              options={filteredLocations.map((location) => ({
-                label: location.name,
-                value: location.id,
-              }))}
-            />
-            <TagPicker
-              label="Tags (max. 6)"
-              value={form.tags}
-              onChange={(values) => handleMultiSelectChange('tags', values)}
-              options={tags.map((tag) => ({ id: tag.id, name: tag.name, color: tag.color }))}
-              max={6}
-            />
-            <SelectField
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <SelectField
+                label="Veranstaltungsort"
+                value={form.location}
+                onChange={(value) => handleChange('location', value)}
+                placeholder="Ort auswählen"
+                options={filteredLocations.map((location) => ({
+                  label: location.name,
+                  value: location.id,
+                }))}
+              />
+              <TagPicker
+                label="Tags (max. 6)"
+                value={form.tags}
+                onChange={(values) => handleMultiSelectChange('tags', values)}
+                options={tags.map((tag) => ({ id: tag.id, name: tag.name, color: tag.color }))}
+                max={6}
+              />
+            </div>
+            <ImageUpload
               label="Titelbild"
               value={form.image}
               onChange={(value) => handleChange('image', value)}
-              placeholder="Bild auswählen"
-              options={filteredMedia.map((item) => ({
-                label: item.alt || item.filename || 'Bild',
-                value: item.id,
-              }))}
+              organizations={userOrganizations}
+              selectedOrg={form.organizer}
+              onOrgChange={(value) => handleChange('organizer', value)}
+              existingMedia={filteredMedia}
+              showExistingPicker={true}
+              showUpload={true}
+              aspectRatio="16/9"
+              helpText="Wähle ein bestehendes Bild aus deiner Bibliothek oder lade ein neues hoch."
+              onUploadComplete={(newMedia) => {
+                // Add the newly uploaded media to the list so it's immediately selectable
+                setMedia((prev) => [newMedia, ...prev]);
+              }}
             />
           </div>
         )}

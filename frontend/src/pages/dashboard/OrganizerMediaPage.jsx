@@ -4,14 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
 import { HelpSection } from '../../components/HelpTooltip';
+import ImageUpload from '../../components/ImageUpload';
 
 const OrganizerMediaPage = () => {
   const { user } = useAuth();
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [altText, setAltText] = useState('');
-  const [file, setFile] = useState(null);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [organizations, setOrganizations] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
@@ -204,68 +202,6 @@ const OrganizerMediaPage = () => {
     };
   }, [user]);
 
-  const handleUpload = async (event) => {
-    event.preventDefault();
-    if (!file || !altText.trim()) {
-      setError('Bitte wähle eine Datei aus und gib einen Alt-Text an.');
-      return;
-    }
-    if (!selectedOrg) {
-      setError('Bitte wähle eine Organisation für dieses Bild aus.');
-      return;
-    }
-
-    setUploading(true);
-    setError('');
-    setMessage('');
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('alt', altText.trim());
-    formData.append('organization', selectedOrg);
-
-    try {
-      const response = await fetch(buildApiUrl(`/api/media?alt=${encodeURIComponent(altText.trim())}&organization=${encodeURIComponent(selectedOrg)}`), {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: withAuthHeaders(),
-      });
-
-      let created = null;
-
-      // Read body once and try to parse as JSON to avoid "Body has already been consumed" issues
-      const bodyText = await response.text();
-      let parsed = null;
-      try {
-        parsed = bodyText ? JSON.parse(bodyText) : null;
-      } catch {
-        parsed = null;
-      }
-
-      if (!response.ok) {
-        const message = parsed?.errors?.[0]?.message || parsed?.message || bodyText || 'Upload fehlgeschlagen';
-        throw new Error(message);
-      } else {
-        created = parsed?.doc ?? parsed ?? null;
-      }
-
-      if (created) {
-        setMedia((prev) => [created, ...prev]);
-      } else {
-        // Fallback: refetch list so UI stays consistent even if response shape was unexpected.
-        setMedia((prev) => prev.slice());
-      }
-      setFile(null);
-      setAltText('');
-      setMessage('Bild wurde hochgeladen.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload fehlgeschlagen');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handlePreview = async (item) => {
     setError('');
     const rawUrl = item.url || item.sizes?.original?.url || item.filename || '';
@@ -375,55 +311,26 @@ const OrganizerMediaPage = () => {
           </div>
         )}
 
-        <form onSubmit={handleUpload} className="mt-4 space-y-4">
-          {/* Organization selection */}
-          <label className="flex flex-col text-sm font-medium text-gray-700">
-            Organisation <span className="text-red-500">*</span>
-            <select
-              value={selectedOrg}
-              onChange={(e) => setSelectedOrg(e.target.value)}
-              disabled={loadingOrgs || noOrgsWarning}
-              required
-              className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] disabled:opacity-50"
-            >
-              <option value="">{loadingOrgs ? 'Lade Organisationen …' : 'Organisation wählen'}</option>
-              {organizations.map((org) => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
-            </select>
-            <span className="mt-1 text-xs text-gray-500">Das Bild wird dieser Organisation zugeordnet.</span>
-          </label>
-          
-          <label className="flex flex-col text-sm font-medium text-gray-700">
-            Bilddatei
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              className="mt-1"
-              required
-              disabled={noOrgsWarning}
-            />
-          </label>
-          <label className="flex flex-col text-sm font-medium text-gray-700">
-            Alt-Text (Beschreibung)
-            <input
-              value={altText}
-              onChange={(event) => setAltText(event.target.value)}
-              placeholder="Was ist auf dem Bild zu sehen?"
-              required
-              disabled={noOrgsWarning}
-              className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] disabled:opacity-50"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={uploading || noOrgsWarning}
-            className="rounded-md bg-[#7CB92C] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#5a8b20] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {uploading ? 'Lade hoch …' : 'Bild hochladen'}
-          </button>
-        </form>
+        <div className="mt-4">
+          <ImageUpload
+            label="Bild hochladen"
+            value=""
+            onChange={() => {}}
+            organizations={organizations}
+            selectedOrg={selectedOrg}
+            onOrgChange={setSelectedOrg}
+            existingMedia={[]}
+            showExistingPicker={false}
+            showUpload={true}
+            disabled={noOrgsWarning || loadingOrgs}
+            aspectRatio="16/9"
+            helpText="Lade ein neues Bild für deine Veranstaltungen hoch. Es wird automatisch deiner Medienbibliothek hinzugefügt."
+            onUploadComplete={(newMedia) => {
+              setMedia((prev) => [newMedia, ...prev]);
+              setMessage('Bild wurde erfolgreich hochgeladen.');
+            }}
+          />
+        </div>
       </section>
 
       <section className="space-y-4">

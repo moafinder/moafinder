@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createLocation } from '../../api/locations';
 import { buildApiUrl } from '../../api/baseUrl';
@@ -6,6 +6,7 @@ import { withAuthHeaders } from '../../utils/authHeaders';
 import { useAuth } from '../../context/AuthContext';
 import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
 import { HelpSection } from '../../components/HelpTooltip';
+import ImageUpload from '../../components/ImageUpload';
 
 const EditorPlaceCreatePage = () => {
   const navigate = useNavigate();
@@ -231,16 +232,28 @@ const EditorPlaceCreatePage = () => {
         
         <Textarea label="Beschreibung (max. 1000 Zeichen)" rows={4} value={form.description} onChange={(v) => handleChange('description', v)} maxLength={1000} />
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Select
-            label="Titelbild"
-            value={form.image}
-            onChange={(v) => handleChange('image', v)}
-            placeholder={loadingMedia ? 'Lade Medien …' : 'Bild auswählen'}
-            options={media.map((m) => ({ value: m.id, label: m.alt || m.filename }))}
-          />
-          <Field label="Öffnungszeiten (optional)" value={form.openingHours} onChange={(v) => handleChange('openingHours', v)} />
-        </div>
+        <ImageUpload
+          label="Titelbild"
+          value={form.image}
+          onChange={(v) => handleChange('image', v)}
+          organizations={organizations}
+          selectedOrg={form.organizations[0] || ''}
+          onOrgChange={(orgId) => {
+            if (!form.organizations.includes(orgId)) {
+              handleChange('organizations', [orgId, ...form.organizations]);
+            }
+          }}
+          existingMedia={media}
+          showExistingPicker={true}
+          showUpload={true}
+          aspectRatio="16/9"
+          helpText="Wähle ein bestehendes Bild oder lade ein neues hoch. Das Bild wird als Titelbild des Ortes angezeigt."
+          onUploadComplete={(newMedia) => {
+            setMedia((prev) => [newMedia, ...prev]);
+          }}
+        />
+
+        <Field label="Öffnungszeiten (optional)" value={form.openingHours} onChange={(v) => handleChange('openingHours', v)} />
 
         <div className="space-y-3">
           <p className="text-sm font-semibold text-gray-900">Adresse</p>
