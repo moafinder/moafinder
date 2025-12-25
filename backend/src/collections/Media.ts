@@ -37,7 +37,7 @@ async function getUserOrganizationIds(req: PayloadRequest): Promise<string[]> {
 const Media: CollectionConfig = {
   slug: 'media',
   upload: {
-    staticDir: '../uploads',
+    staticDir: './uploads',
     mimeTypes: ['image/*'],
     imageSizes: [
       {
