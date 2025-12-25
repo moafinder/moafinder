@@ -105,18 +105,19 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
     return userOrganizations.map((org) => org.id);
   }, [userOrganizations]);
 
-  // Filter locations to only show those belonging to user's organizations
+  // Filter locations based on selected organization
+  // Admin sees all locations, others see only locations from selected organization
   const filteredLocations = useMemo(() => {
     if (user?.role === 'admin') return locations;
-    if (userOrgIds.length === 0) return [];
+    if (!form.organizer) return []; // No org selected, no locations to show
     return locations.filter((loc) => {
       const locOrgs = loc.organizations || [];
       return locOrgs.some((org) => {
         const orgId = typeof org === 'object' ? org?.id : org;
-        return userOrgIds.includes(orgId);
+        return orgId === form.organizer;
       });
     });
-  }, [locations, userOrgIds, user?.role]);
+  }, [locations, form.organizer, user?.role]);
 
   // Filter media to only show those belonging to user's organizations
   const filteredMedia = useMemo(() => {
@@ -416,6 +417,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
           <div>
             <strong className="text-blue-800">Wichtige Hinweise:</strong>
             <ul className="mt-1 ml-4 list-disc space-y-1">
+              <li><strong>Wählen Sie zuerst die Organisation</strong>, dann werden die verfügbaren Veranstaltungsorte geladen.</li>
               <li>Du kannst nur <strong>Orte und Bilder deiner Organisation(en)</strong> verwenden.</li>
               {userOrganizations.length > 1 && (
                 <li>Da du mehreren Organisationen angehörst, wähle bitte den <strong>Veranstalter</strong> aus.</li>
@@ -457,12 +459,17 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
             value={form.subtitle}
             onChange={(value) => handleChange('subtitle', value)}
           />
-          {/* Show organizer selector only if user has multiple organizations */}
-          {userOrganizations.length > 1 && (
+          {/* Show organizer selector - always show if user has organizations */}
+          {userOrganizations.length > 0 && (
             <SelectField
               label="Veranstalter (Organisation)"
+              required
               value={form.organizer}
-              onChange={(value) => handleChange('organizer', value)}
+              onChange={(value) => {
+                handleChange('organizer', value);
+                // Clear location when organization changes (location may not belong to new org)
+                handleChange('location', '');
+              }}
               placeholder="Organisation auswählen"
               options={userOrganizations.map((org) => ({
                 label: org.name,
@@ -609,16 +616,25 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         ) : (
           <div className="mt-4 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <SelectField
-                label="Veranstaltungsort"
-                value={form.location}
-                onChange={(value) => handleChange('location', value)}
-                placeholder="Ort auswählen"
-                options={filteredLocations.map((location) => ({
-                  label: location.name,
-                  value: location.id,
-                }))}
-              />
+              {!form.organizer && user?.role !== 'admin' ? (
+                <div className="flex flex-col text-sm font-medium text-gray-700">
+                  Veranstaltungsort
+                  <p className="mt-1 text-xs text-gray-500 italic">
+                    Bitte wählen Sie zuerst eine Organisation aus, um die verfügbaren Veranstaltungsorte zu sehen.
+                  </p>
+                </div>
+              ) : (
+                <SelectField
+                  label="Veranstaltungsort"
+                  value={form.location}
+                  onChange={(value) => handleChange('location', value)}
+                  placeholder={filteredLocations.length === 0 ? 'Keine Orte für diese Organisation' : 'Ort auswählen'}
+                  options={filteredLocations.map((location) => ({
+                    label: location.name,
+                    value: location.id,
+                  }))}
+                />
+              )}
               <TagPicker
                 label="Tags (max. 6)"
                 value={form.tags}

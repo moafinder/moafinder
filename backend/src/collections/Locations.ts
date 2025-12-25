@@ -212,11 +212,66 @@ const Locations: CollectionConfig = {
         const user = req.user as any
         if (!user) return data
 
-        if (operation === 'create' && user.role !== 'admin') {
-          // Force organizations to the user's organizations
+        if (operation === 'create') {
+          // Get the admin organization (first org owned by an admin user)
+          let adminOrgId: string | null = null
+          try {
+            // Find first admin user
+            const adminUsers = await req.payload.find({
+              collection: 'users',
+              where: { role: { equals: 'admin' } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            if (adminUsers.docs.length > 0) {
+              const adminUser = adminUsers.docs[0] as any
+              // Get admin's first organization
+              if (adminUser.organizations && Array.isArray(adminUser.organizations) && adminUser.organizations.length > 0) {
+                adminOrgId = typeof adminUser.organizations[0] === 'object' 
+                  ? adminUser.organizations[0].id 
+                  : adminUser.organizations[0]
+              }
+            }
+          } catch {
+            // ignore errors finding admin org
+          }
+
+          // Get the creating user's organizations
           const userOrgIds = await getUserOrganizationIds(req)
-          if (userOrgIds.length > 0 && (!data.organizations || data.organizations.length === 0)) {
-            data.organizations = userOrgIds
+          
+          // Combine: admin org + user's orgs (deduplicated)
+          const orgIds: string[] = []
+          
+          // Always add admin org first if available
+          if (adminOrgId) {
+            orgIds.push(adminOrgId)
+          }
+          
+          // Add user's orgs (if any and not already included)
+          for (const orgId of userOrgIds) {
+            if (!orgIds.includes(orgId)) {
+              orgIds.push(orgId)
+            }
+          }
+          
+          // If user provided organizations, merge them in (but ensure admin org is included)
+          if (data.organizations && Array.isArray(data.organizations) && data.organizations.length > 0) {
+            for (const org of data.organizations) {
+              const orgId = typeof org === 'object' ? org?.id : org
+              if (orgId && !orgIds.includes(orgId)) {
+                orgIds.push(orgId)
+              }
+            }
+            // Ensure admin org is still included
+            if (adminOrgId && !orgIds.includes(adminOrgId)) {
+              orgIds.unshift(adminOrgId)
+            }
+          }
+          
+          // Set the organizations
+          if (orgIds.length > 0) {
+            data.organizations = orgIds
           }
         }
 

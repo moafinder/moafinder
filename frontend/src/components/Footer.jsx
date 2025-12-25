@@ -71,11 +71,11 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Social media section */}
+{/* Social media section - hidden for now */}
+          {/*
           <div>
             <h2 className="text-lg font-semibold mb-2">Folgen Sie uns</h2>
             <div className="flex space-x-4 text-lg">
-              {/* TODO: Update with actual MoaFinder social media profile URLs */}
               <a href="https://www.instagram.com/moabit.world/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-700 hover:text-brand">
                 <FontAwesomeIcon icon={faInstagram} />
               </a>
@@ -87,6 +87,7 @@ const Footer = () => {
               © {new Date().getFullYear()} MoaFinder. Alle Rechte vorbehalten.
             </p>
           </div>
+          */}
         </div>
       </div>
 
@@ -95,6 +96,7 @@ const Footer = () => {
         <div className="container mx-auto px-4">
           <p className="text-black text-xs mb-2">Dies ist ein Kooperationsprojekt von:</p>
           <div className="flex space-x-4 mb-4">
+            {/* Kiez Machen logo hidden for now
             <a
               href="https://moabiter-ratschlag.de/orte/kiez-machen-mobile-stadtteilarbeit-in-moabit/"
               target="_blank"
@@ -106,6 +108,7 @@ const Footer = () => {
                 className="h-12 hover:opacity-80 transition-opacity"
               />
             </a>
+            */}
             <a
               href="https://www.refo-moabit.de/"
               target="_blank"
