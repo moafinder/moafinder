@@ -1,4 +1,52 @@
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig, PayloadRequest, Access } from 'payload'
+
+// Custom update access:
+// - Admins can update any organization
+// - Editors can update only organizations they belong to (owner or member)
+// - Regular users (organizers) cannot update
+const updateAccess: Access = async ({ req, id }) => {
+  const { user, payload } = req
+  if (!user) return false
+  
+  // Admins can update all organizations
+  if (user.role === 'admin') return true
+  
+  // Regular users (organizers) cannot update any organization
+  if (user.role !== 'editor') return false
+  
+  // Editors can only update organizations they belong to
+  // If no specific ID is being updated, use query-based access for editors
+  if (!id) {
+    // Return a query that matches organizations the editor owns
+    return {
+      owner: {
+        equals: user.id,
+      },
+    } as any
+  }
+  
+  // Check if editor is the owner of this specific organization
+  try {
+    const org = await payload.findByID({
+      collection: 'organizations',
+      id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const ownerId = typeof org?.owner === 'object' ? org?.owner?.id : org?.owner
+    if (ownerId === user.id) return true
+  } catch {
+    // Org not found, deny access
+    return false
+  }
+  
+  // Check if editor is a member of this organization (user.organizations contains this org)
+  const userOrgs = user.organizations || []
+  const userOrgIds = userOrgs.map((o: any) => typeof o === 'object' ? o.id : o)
+  if (userOrgIds.includes(id)) return true
+  
+  return false
+}
 
 const Organizations: CollectionConfig = {
   slug: 'organizations',
@@ -14,17 +62,7 @@ const Organizations: CollectionConfig = {
       // All authenticated users can create organizations (pending approval)
       return !!req.user
     },
-    update: ({ req }: { req: PayloadRequest }) => {
-      const { user } = req
-      if (!user) return false
-      if (user.role === 'admin' || user.role === 'editor') return true
-      // Organization owners can update their own org (except approval status)
-      return {
-        owner: {
-          equals: user.id,
-        },
-      } as any
-    },
+    update: updateAccess,
     delete: ({ req }: { req: PayloadRequest }) => {
       // Only admins can delete organizations
       return req.user?.role === 'admin'

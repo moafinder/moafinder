@@ -106,9 +106,8 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
   }, [userOrganizations]);
 
   // Filter locations based on selected organization
-  // Admin sees all locations, others see only locations from selected organization
+  // ALL users must select an organization first to see available locations
   const filteredLocations = useMemo(() => {
-    if (user?.role === 'admin') return locations;
     if (!form.organizer) return []; // No org selected, no locations to show
     return locations.filter((loc) => {
       const locOrgs = loc.organizations || [];
@@ -117,7 +116,7 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         return orgId === form.organizer;
       });
     });
-  }, [locations, form.organizer, user?.role]);
+  }, [locations, form.organizer]);
 
   // Filter media to only show those belonging to user's organizations
   const filteredMedia = useMemo(() => {
@@ -408,22 +407,29 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
       <HelpSection title="Wie funktioniert die Veranstaltungserstellung?">
         <div className="space-y-3">
           <div>
+            <strong className="text-blue-800">Schritt-für-Schritt:</strong>
+            <ol className="mt-1 ml-4 list-decimal space-y-1">
+              <li><strong>Organisation wählen:</strong> Wähle zuerst die Organisation, die die Veranstaltung ausrichtet.</li>
+              <li><strong>Veranstaltungsort wählen:</strong> Nach Auswahl der Organisation werden nur die Orte angezeigt, die dieser Organisation zugeordnet sind.</li>
+              <li><strong>Details ausfüllen:</strong> Fülle alle Pflichtfelder aus (mit * gekennzeichnet).</li>
+              <li><strong>Speichern oder Einreichen:</strong> Als Entwurf speichern oder zur Prüfung einreichen.</li>
+            </ol>
+          </div>
+          <div>
             <strong className="text-blue-800">Veröffentlichungsprozess:</strong>
             <ul className="mt-1 ml-4 list-disc space-y-1">
-              <li><strong>Als Entwurf speichern:</strong> Die Veranstaltung wird gespeichert, ist aber nicht öffentlich sichtbar. Du kannst sie später bearbeiten.</li>
-              <li><strong>Zur Prüfung einreichen:</strong> Die Veranstaltung wird an die Redaktion zur Freigabe gesendet. Nach der Freigabe ist sie öffentlich sichtbar.</li>
+              <li><strong>Als Entwurf speichern:</strong> Die Veranstaltung wird gespeichert, ist aber nicht öffentlich sichtbar.</li>
+              <li><strong>Zur Prüfung einreichen:</strong> Die Veranstaltung wird an die Redaktion zur Freigabe gesendet.</li>
             </ul>
           </div>
           <div>
-            <strong className="text-blue-800">Wichtige Hinweise:</strong>
+            <strong className="text-blue-800">Wichtig zu wissen:</strong>
             <ul className="mt-1 ml-4 list-disc space-y-1">
-              <li><strong>Wählen Sie zuerst die Organisation</strong>, dann werden die verfügbaren Veranstaltungsorte geladen.</li>
-              <li>Du kannst nur <strong>Orte und Bilder deiner Organisation(en)</strong> verwenden.</li>
+              <li>Jede Organisation hat eigene Veranstaltungsorte. Du siehst nur Orte deiner gewählten Organisation.</li>
+              <li>Wenn du die Organisation wechselst, wird der gewählte Ort zurückgesetzt.</li>
               {userOrganizations.length > 1 && (
-                <li>Da du mehreren Organisationen angehörst, wähle bitte den <strong>Veranstalter</strong> aus.</li>
+                <li>Du gehörst zu {userOrganizations.length} Organisationen – wähle die passende aus.</li>
               )}
-              <li>Die Veranstaltung wird automatisch deiner Organisation zugeordnet.</li>
-              <li>Pflichtfelder sind mit einem Sternchen (*) gekennzeichnet.</li>
             </ul>
           </div>
           {user?.role === 'admin' || user?.role === 'editor' ? (
@@ -461,21 +467,31 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
           />
           {/* Show organizer selector - always show if user has organizations */}
           {userOrganizations.length > 0 && (
-            <SelectField
-              label="Veranstalter (Organisation)"
-              required
-              value={form.organizer}
-              onChange={(value) => {
-                handleChange('organizer', value);
-                // Clear location when organization changes (location may not belong to new org)
-                handleChange('location', '');
-              }}
-              placeholder="Organisation auswählen"
-              options={userOrganizations.map((org) => ({
-                label: org.name,
-                value: org.id,
-              }))}
-            />
+            <div className="md:col-span-2">
+              <div className="rounded-lg border-2 border-[#7CB92C] bg-[#F0F8E8] p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#5a8b20]">
+                  Schritt 1: Organisation auswählen
+                </p>
+                <SelectField
+                  label="Veranstalter (Organisation)"
+                  required
+                  value={form.organizer}
+                  onChange={(value) => {
+                    handleChange('organizer', value);
+                    // Clear location when organization changes (location may not belong to new org)
+                    handleChange('location', '');
+                  }}
+                  placeholder="Bitte zuerst Organisation wählen"
+                  options={userOrganizations.map((org) => ({
+                    label: org.name,
+                    value: org.id,
+                  }))}
+                />
+                <p className="mt-2 text-xs text-gray-600">
+                  Die Auswahl der Organisation bestimmt, welche Veranstaltungsorte und Bilder verfügbar sind.
+                </p>
+              </div>
+            </div>
           )}
           <SelectField
             label="Art der Veranstaltung"
@@ -616,24 +632,32 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
         ) : (
           <div className="mt-4 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              {!form.organizer && user?.role !== 'admin' ? (
+              {!form.organizer ? (
                 <div className="flex flex-col text-sm font-medium text-gray-700">
-                  Veranstaltungsort
-                  <p className="mt-1 text-xs text-gray-500 italic">
-                    Bitte wählen Sie zuerst eine Organisation aus, um die verfügbaren Veranstaltungsorte zu sehen.
-                  </p>
+                  Veranstaltungsort *
+                  <div className="mt-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    <span className="font-medium">Schritt 1:</span> Bitte wählen Sie zuerst oben eine <strong>Organisation</strong> aus, um die verfügbaren Veranstaltungsorte zu sehen.
+                  </div>
                 </div>
               ) : (
-                <SelectField
-                  label="Veranstaltungsort"
-                  value={form.location}
-                  onChange={(value) => handleChange('location', value)}
-                  placeholder={filteredLocations.length === 0 ? 'Keine Orte für diese Organisation' : 'Ort auswählen'}
-                  options={filteredLocations.map((location) => ({
-                    label: location.name,
-                    value: location.id,
-                  }))}
-                />
+                <div className="flex flex-col text-sm font-medium text-gray-700">
+                  <SelectField
+                    label={`Veranstaltungsort (${filteredLocations.length} verfügbar)`}
+                    required
+                    value={form.location}
+                    onChange={(value) => handleChange('location', value)}
+                    placeholder={filteredLocations.length === 0 ? 'Keine Orte für diese Organisation' : 'Ort auswählen'}
+                    options={filteredLocations.map((location) => ({
+                      label: location.name,
+                      value: location.id,
+                    }))}
+                  />
+                  {filteredLocations.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      Diese Organisation hat noch keine Veranstaltungsorte. Bitte erst einen Ort anlegen oder einer anderen Organisation zuweisen.
+                    </p>
+                  )}
+                </div>
               )}
               <TagPicker
                 label="Tags (max. 6)"
