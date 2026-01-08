@@ -12,6 +12,8 @@ const primaryNav = [
 const organizerSidebar = [
   { label: 'Veranstaltungsorte', to: '/dashboard/places' },
   { label: 'Profil der Organisation', to: '/dashboard/organization' },
+  { label: 'Organisationen durchsuchen', to: '/dashboard/organization/browse' },
+  { label: 'Neue Organisation', to: '/dashboard/organization/new' },
   { label: 'Angebote/Veranstaltungen', to: '/dashboard/events' },
   { label: 'Event-Bilder', to: '/dashboard/media' },
   { label: 'Regelkatalog', to: '/dashboard/guidelines' },

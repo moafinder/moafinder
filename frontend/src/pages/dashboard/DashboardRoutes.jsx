@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import OrganizationProfilePage from './OrganizationProfilePage';
+import OrganizationCreatePage from './OrganizationCreatePage';
+import OrganizationBrowsePage from './OrganizationBrowsePage';
 import OrganizerEventsPage from './OrganizerEventsPage';
 import OrganizerMediaPage from './OrganizerMediaPage';
 import OrganizerEventCreatePage from './OrganizerEventCreatePage';
@@ -29,6 +31,8 @@ const DashboardRoutes = () => {
       <Routes>
         <Route index element={<Navigate to="/dashboard/events" replace />} />
         <Route path="organization" element={<OrganizationProfilePage />} />
+        <Route path="organization/new" element={<OrganizationCreatePage />} />
+        <Route path="organization/browse" element={<OrganizationBrowsePage />} />
         <Route path="events" element={<OrganizerEventsPage />} />
         <Route path="password" element={<ChangePasswordPage />} />
         <Route path="events/new" element={<OrganizerEventCreatePage />} />

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { buildApiUrl } from '../../api/baseUrl';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { HelpSection } from '../../components/HelpTooltip';
+import { handleMembershipRequest } from '../../api/organizations';
 
 const statusOptions = [
   { value: 'all', label: 'Alle' },
@@ -24,7 +25,7 @@ const EditorOrganizationsPage = () => {
       setLoading(true);
       setError('');
       try {
-        const params = new URLSearchParams({ limit: '200', sort: 'name' });
+        const params = new URLSearchParams({ limit: '200', sort: 'name', depth: '2' });
         const response = await fetch(buildApiUrl(`/api/organizations?${params.toString()}`), {
           credentials: 'include',
           headers: withAuthHeaders(),
@@ -88,6 +89,39 @@ const EditorOrganizationsPage = () => {
     }
   };
 
+  const handleMembership = async (orgId, userId, action) => {
+    try {
+      setProcessingId(`${orgId}-${userId}`);
+      await handleMembershipRequest(orgId, userId, action);
+      // Update local state to reflect the change
+      setOrganizations((prev) =>
+        prev.map((org) => {
+          if (org.id !== orgId) return org;
+          const updatedRequests = (org.membershipRequests || []).map((r) => {
+            const reqUserId = typeof r.user === 'object' ? r.user.id : r.user;
+            if (reqUserId === userId) {
+              return { ...r, status: action === 'approve' ? 'approved' : 'rejected' };
+            }
+            return r;
+          });
+          return { ...org, membershipRequests: updatedRequests };
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Anfrage konnte nicht bearbeitet werden');
+    } finally {
+      setProcessingId('');
+    }
+  };
+
+  // Count pending membership requests
+  const pendingMembershipCount = useMemo(() => {
+    return organizations.reduce((count, org) => {
+      const pending = (org.membershipRequests || []).filter((r) => r.status === 'pending');
+      return count + pending.length;
+    }, 0);
+  }, [organizations]);
+
   return (
     <div className="space-y-6">
       <header>
@@ -124,10 +158,71 @@ const EditorOrganizationsPage = () => {
         </div>
       </HelpSection>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard label="Freigabe ausstehend" value={counts.pending ?? 0} active={activeFilter === 'pending'} onClick={() => setActiveFilter('pending')} />
         <SummaryCard label="Freigegeben" value={counts.approved ?? 0} active={activeFilter === 'approved'} onClick={() => setActiveFilter('approved')} />
+        <SummaryCard label="Mitgliedschaftsanfragen" value={pendingMembershipCount} active={false} onClick={() => {}} highlight={pendingMembershipCount > 0} />
       </div>
+
+      {/* Pending Membership Requests Section */}
+      {pendingMembershipCount > 0 && (
+        <section className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+          <h2 className="mb-3 text-lg font-semibold text-yellow-800">
+            Offene Mitgliedschaftsanfragen ({pendingMembershipCount})
+          </h2>
+          <div className="space-y-3">
+            {organizations.map((org) => {
+              const pendingRequests = (org.membershipRequests || []).filter((r) => r.status === 'pending');
+              if (pendingRequests.length === 0) return null;
+              return (
+                <div key={org.id} className="rounded-md bg-white p-3 shadow-sm">
+                  <h3 className="font-semibold text-gray-900">{org.name}</h3>
+                  <div className="mt-2 space-y-2">
+                    {pendingRequests.map((request, idx) => {
+                      const userId = typeof request.user === 'object' ? request.user.id : request.user;
+                      const userName = typeof request.user === 'object' ? request.user.name || request.user.email : userId;
+                      const userEmail = typeof request.user === 'object' ? request.user.email : '';
+                      const processingThis = processingId === `${org.id}-${userId}`;
+                      return (
+                        <div key={idx} className="flex flex-col gap-2 rounded border border-gray-200 bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{userName}</p>
+                            {userEmail && <p className="text-xs text-gray-500">{userEmail}</p>}
+                            {request.message && (
+                              <p className="mt-1 text-xs text-gray-600 italic">"{request.message}"</p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                              Angefragt am {new Date(request.requestedAt).toLocaleDateString('de-DE')}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleMembership(org.id, userId, 'approve')}
+                              disabled={processingThis}
+                              className="rounded bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                            >
+                              Genehmigen
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMembership(org.id, userId, 'reject')}
+                              disabled={processingThis}
+                              className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Ablehnen
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-3 text-sm">
@@ -211,15 +306,15 @@ const EditorOrganizationsPage = () => {
 
 export default EditorOrganizationsPage;
 
-const SummaryCard = ({ label, value, active, onClick }) => (
+const SummaryCard = ({ label, value, active, onClick, highlight }) => (
   <button
     type="button"
     onClick={onClick}
     className={`flex flex-col rounded-xl border px-4 py-3 text-left transition hover:-translate-y-0.5 hover:shadow ${
-      active ? 'border-[#7CB92C] bg-[#F0F8E8]' : 'border-gray-200 bg-white'
+      active ? 'border-[#7CB92C] bg-[#F0F8E8]' : highlight ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white'
     }`}
   >
     <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-    <span className="text-2xl font-semibold text-gray-900">{value}</span>
+    <span className={`text-2xl font-semibold ${highlight ? 'text-yellow-700' : 'text-gray-900'}`}>{value}</span>
   </button>
 );

@@ -143,13 +143,14 @@ This document describes common user workflows in MoaFinder, including the minimu
 - User is logged in
 
 **Steps:**
-1. User navigates to organization creation form
+1. User navigates to Dashboard → "Neue Organisation" in sidebar
 2. User fills in organization details:
    - Name (required)
    - Email (required)
    - Contact person (optional)
    - Phone (optional)
-   - Logo (optional)
+   - Website (optional)
+   - Address (optional)
 3. User submits the form
 
 **Behavior:**
@@ -163,6 +164,8 @@ This document describes common user workflows in MoaFinder, including the minimu
 - Organization appears in the system but events cannot be publicly approved
 - Admin or editor must approve the organization before events can be published
 
+**Frontend Location:** `/dashboard/organization/new`
+
 ---
 
 ## 6. Requesting Membership to an Organization
@@ -171,12 +174,15 @@ This document describes common user workflows in MoaFinder, including the minimu
 
 **Preconditions:**
 - User is logged in
-- Organization exists
+- Organization exists and is approved
 - User is not already a member
 
 **Steps:**
-1. User finds the organization they want to join
-2. User submits a membership request (optionally with a message)
+1. User navigates to Dashboard → "Organisationen durchsuchen"
+2. User finds the organization they want to join
+3. User clicks "Mitgliedschaft anfragen"
+4. User optionally adds a message explaining why they want to join
+5. User confirms the request
 
 **Behavior:**
 - System adds a membership request to `organization.membershipRequests[]` with:
@@ -186,8 +192,11 @@ This document describes common user workflows in MoaFinder, including the minimu
   - `message: <optional message>`
 
 **Outcome:**
-- Request is visible to admin/editor
+- Request is visible to admin/editor in the "Profile der Organisationen" page
+- User sees "Anfrage ausstehend" status on the organization card
 - User awaits approval or rejection
+
+**Frontend Location:** `/dashboard/organization/browse`
 
 ---
 
@@ -200,9 +209,9 @@ This document describes common user workflows in MoaFinder, including the minimu
 - Membership request exists with status 'pending'
 
 **Steps:**
-1. Admin/editor navigates to organization management
-2. Admin/editor views pending membership requests
-3. Admin/editor approves or rejects the request
+1. Admin/editor navigates to Redaktion → "Profile der Organisationen"
+2. Admin/editor sees pending membership requests highlighted at the top
+3. Admin/editor clicks "Genehmigen" or "Ablehnen" for each request
 
 **Behavior:**
 - If approved:
@@ -216,6 +225,8 @@ This document describes common user workflows in MoaFinder, including the minimu
 **Outcome:**
 - Approved users can now create content for this organization
 - Rejected users remain without access to the organization
+
+**Frontend Location:** `/dashboard/editor/organizations`
 
 ---
 
@@ -532,10 +543,11 @@ This document describes common user workflows in MoaFinder, including the minimu
 - User and organization exist
 
 **Steps:**
-1. Admin navigates to user management in admin panel
-2. Admin opens user's profile
-3. Admin selects organizations from the `organizations` relationship field
-4. Admin saves changes
+1. Admin navigates to the **Payload Admin Panel** (backend CMS at `/admin`)
+2. Admin goes to Users collection
+3. Admin opens user's profile
+4. Admin selects organizations from the `organizations` relationship field
+5. Admin saves changes
 
 **Behavior:**
 - User's `organizations[]` array is updated
@@ -546,7 +558,8 @@ This document describes common user workflows in MoaFinder, including the minimu
 
 **Outcome:**
 - User can now create and manage content for the assigned organizations
-- This is the **only way** for a new user to get organization access (apart from membership requests)
+- Note: This is done via the Payload Admin Panel, not the custom frontend dashboard
+- Alternative: Users can request membership via the browse organizations page, which editors/admins can then approve
 
 ---
 
