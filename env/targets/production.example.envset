@@ -14,7 +14,7 @@ PORT=3000
 DATABASE_URI="mongodb+srv://user:pass@cluster.mongodb.net/moafinder?retryWrites=true&w=majority"
 PAYLOAD_SECRET="replace-with-production-secret"
 PAYLOAD_PUBLIC_SERVER_URL=https://your-app.apprunner.aws
-CORS_ORIGINS=https://main.your-amplify-domain.com
+CORS_ORIGINS=https://main.your-amplify-domain.com,https://www.moabit.world,https://moabit.world
 
 # Outgoing email (Gmail SMTP). Use a Google Workspace account with 2‑Step Verification
 # and an App Password. For Gmail: host=smtp.gmail.com, port=587 (STARTTLS).
@@ -40,5 +40,5 @@ VITE_API_BASE_URL=https://your-app.apprunner.aws/api
 
 [apprunner]
 PAYLOAD_PUBLIC_SERVER_URL=https://your-app.apprunner.aws
-CORS_ORIGINS=https://main.your-amplify-domain.com
+CORS_ORIGINS=https://main.your-amplify-domain.com,https://www.moabit.world,https://moabit.world
 HOSTNAME=0.0.0.0

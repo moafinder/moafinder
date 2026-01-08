@@ -118,7 +118,7 @@ REPO="${REPO:-moabit-backend}"
 # ECR_URI is recomputed AFTER env file loading below to allow overrides from env/out/<target>-apprunner.env
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO}"
 SERVICE_ARN="${SERVICE_ARN:-arn:aws:apprunner:${AWS_REGION}:${ACCOUNT_ID}:service/moabit-backend/1983a4b57c44498eb5a626353e4d0ecf}"  # <— change if your ARN differs
-AMPLIFY_URL="${AMPLIFY_URL:-https://main.dgfhrurhtm4pa.amplifyapp.com}"  # only used for CORS
+AMPLIFY_URL="${AMPLIFY_URL:-https://main.dgfhrurhtm4pa.amplifyapp.com,https://www.moabit.world,https://moabit.world}"  # only used for CORS
 APP_PORT="${APP_PORT:-3000}"
 HOSTNAME_VALUE="${HOSTNAME_VALUE:-0.0.0.0}"
 

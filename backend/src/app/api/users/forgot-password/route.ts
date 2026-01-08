@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean)
-    const frontendBase = corsList[0] || 'https://main.dgfhrurhtm4pa.amplifyapp.com'
+    const frontendBase = corsList[0] || 'https://www.moabit.world'
     const resetUrl = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(rawToken)}`
 
     const lines = [
