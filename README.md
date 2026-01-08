@@ -45,11 +45,11 @@ VITE_API_BASE_URL=<https://your-api-domain>
 When running the Vite dev server without a dedicated backend domain you can leave this empty (`VITE_API_BASE_URL=`) so requests continue to target the relative `/api/...` paths proxied by the development server.
 
 ## Production Architecture
-- **Frontend:** React single-page app hosted on AWS Amplify (`https://main.dgfhrurhtm4pa.amplifyapp.com`). Amplify rewrites `/api/*` calls to the backend.
+- **Frontend:** React single-page app hosted on AWS Amplify with custom domain `https://www.moabit.world`. Amplify rewrites `/api/*` calls to the backend.
 - **Backend:** Payload CMS + Next.js running on AWS App Runner (container image in Amazon ECR). The current service URL can be found in the App Runner console (e.g. `https://<service-id>.<region>.awsapprunner.com`).
 - **Database:** MongoDB Atlas cluster (MongoDB Atlas UI → Database → Connect for the latest connection string). Both local development and App Runner use this URI.
 
-Traffic flow: Browser → Amplify (static assets) → App Runner (`/api` rewrites) → MongoDB Atlas.
+Traffic flow: Browser → Amplify (static assets at moabit.world) → App Runner (`/api` rewrites) → MongoDB Atlas.
 
 ## Local Development
 
@@ -212,7 +212,7 @@ pnpm lint
 Add local machine IP and App Runner egress IPs to the Atlas access list before deploying (`Network Access → Add IP Address`).
 
 ### 1. Frontend (AWS Amplify)
-The Amplify app is already connected to your repository and available at <https://main.dgfhrurhtm4pa.amplifyapp.com/>.
+The Amplify app is connected to your repository with custom domain `https://www.moabit.world` (internal Amplify URL: `https://main.dgfhrurhtm4pa.amplifyapp.com`).
 
 1. In the Amplify console open **App settings → Environment variables** and set `VITE_API_BASE_URL` to the App Runner domain you noted earlier (e.g. `https://<service-id>.eu-central-1.awsapprunner.com`). The change triggers a redeploy.
 
@@ -252,7 +252,7 @@ Amplify rebuilds automatically whenever you push to the connected Git branch.
 #### 2.1 Prepare the environment set
 1. Copy `env/targets/production.example.envset` to `env/targets/production.envset`.
 2. Fill the placeholders with production credentials:
-   - `[backend]` → `DATABASE_URI`, `PAYLOAD_SECRET`, `CORS_ORIGINS=https://main.dgfhrurhtm4pa.amplifyapp.com`, and Gmail SMTP settings (`SMTP_ENABLE=true`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `CONTACT_RECIPIENT_EMAILS`, `EVENT_APPROVAL_NOTIFICATION_EMAILS`).
+   - `[backend]` → `DATABASE_URI`, `PAYLOAD_SECRET`, `CORS_ORIGINS=https://www.moabit.world,https://moabit.world`, and Gmail SMTP settings (`SMTP_ENABLE=true`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `CONTACT_RECIPIENT_EMAILS`, `EVENT_APPROVAL_NOTIFICATION_EMAILS`). **Important:** The first URL in CORS_ORIGINS is used for email links (password reset, verification).
    - `[frontend]` → `VITE_API_BASE_URL` (temporary value such as `https://placeholder/api`; the deploy script overwrites it with the live domain).
    - `[apprunner]` → `PAYLOAD_PUBLIC_SERVER_URL` and `CORS_ORIGINS` (usually the same as in `[backend]`).
 3. Keep the envset file out of git; the deploy script regenerates `backend/.env`, `frontend/.env.production`, and `env/out/production-apprunner.env` from it.
@@ -329,7 +329,7 @@ failed deployments leave the service in the `CREATE_FAILED` state.
 
 ### 3. Verify routing between frontend and backend
 1. Update the Amplify rewrite rule to use the App Runner URL and redeploy if necessary.
-2. Visit <https://main.dgfhrurhtm4pa.amplifyapp.com/> and open the browser Network tab.
+2. Visit <https://www.moabit.world/> and open the browser Network tab.
 3. Trigger API calls (e.g. load the events list or submit the contact form). Responses should come from the App Runner domain and set cookies successfully.
 4. Check the App Runner logs for any backend errors or missing environment variables.
 
