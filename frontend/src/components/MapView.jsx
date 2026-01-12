@@ -12,34 +12,54 @@ const MAP_BOUNDS = {
   east: 13.385,   // Right of map (longitude)
 };
 
+// Export bounds for use in other components (e.g., coordinate validation)
+export { MAP_BOUNDS };
+
+/**
+ * Check if coordinates are within Moabit map bounds
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {boolean} - True if within bounds
+ */
+export function isWithinMoabitBounds(lat, lng) {
+  if (lat == null || lng == null) return false;
+  const margin = 0.01; // ~1km margin for validation warnings
+  return (
+    lat >= MAP_BOUNDS.south - margin &&
+    lat <= MAP_BOUNDS.north + margin &&
+    lng >= MAP_BOUNDS.west - margin &&
+    lng <= MAP_BOUNDS.east + margin
+  );
+}
+
 /**
  * Convert GPS coordinates to map percentage position
  * @param {number} lat - Latitude
  * @param {number} lng - Longitude
- * @returns {{ x: number, y: number } | null} - Percentage position or null if out of bounds
+ * @param {boolean} clampToEdge - If true, clamp out-of-bounds coords to edge instead of returning null
+ * @returns {{ x: number, y: number, isOutOfBounds: boolean } | null} - Percentage position or null
  */
-function gpsToMapPosition(lat, lng) {
+function gpsToMapPosition(lat, lng, clampToEdge = true) {
   if (lat == null || lng == null) return null;
-  
-  // Check if coordinates are within map bounds (with some margin)
-  const margin = 0.005; // ~500m margin
-  if (
-    lat < MAP_BOUNDS.south - margin ||
-    lat > MAP_BOUNDS.north + margin ||
-    lng < MAP_BOUNDS.west - margin ||
-    lng > MAP_BOUNDS.east + margin
-  ) {
-    return null;
-  }
   
   // Calculate percentage position
   const x = ((lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * 100;
   const y = ((MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * 100;
   
+  // Check if out of bounds
+  const isOutOfBounds = x < 0 || x > 100 || y < 0 || y > 100;
+  
+  // If out of bounds and not clamping, return null (only for very far locations)
+  const margin = 20; // 20% margin before rejecting
+  if (!clampToEdge && (x < -margin || x > 100 + margin || y < -margin || y > 100 + margin)) {
+    return null;
+  }
+  
   // Clamp to 0-100
   return {
     x: Math.max(0, Math.min(100, x)),
     y: Math.max(0, Math.min(100, y)),
+    isOutOfBounds,
   };
 }
 
@@ -65,11 +85,11 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
       .map((place) => {
         // If mapPosition is already set with valid values, use it
         if (place.mapPosition?.x != null && place.mapPosition?.y != null) {
-          return { ...place, calculatedPosition: place.mapPosition };
+          return { ...place, calculatedPosition: { ...place.mapPosition, isOutOfBounds: false } };
         }
         // Otherwise try to calculate from GPS coordinates
         if (place.coordinates?.lat != null && place.coordinates?.lng != null) {
-          const position = gpsToMapPosition(place.coordinates.lat, place.coordinates.lng);
+          const position = gpsToMapPosition(place.coordinates.lat, place.coordinates.lng, true);
           if (position) {
             return { ...place, calculatedPosition: position };
           }
@@ -79,14 +99,12 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
       .filter(Boolean);
     
     // Debug: log how many places have positions
-    console.log(`MapView: ${results.length}/${sortedPlaces.length} places have map positions`);
-    if (results.length < sortedPlaces.length) {
-      const missing = sortedPlaces.filter(p => !results.find(r => r.id === p.id));
-      console.log('Places without positions:', missing.map(p => ({
-        name: p.shortName || p.name,
-        coords: p.coordinates,
-        mapPos: p.mapPosition
-      })));
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`MapView: ${results.length}/${sortedPlaces.length} places have map positions`);
+      const outOfBounds = results.filter(p => p.calculatedPosition?.isOutOfBounds);
+      if (outOfBounds.length > 0) {
+        console.log('Places at edge (out of bounds):', outOfBounds.map(p => p.shortName || p.name));
+      }
     }
     
     return results;
@@ -123,6 +141,7 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
             const isHovered = hoveredPlace === place.id;
             const position = place.calculatedPosition;
             const placeName = place.shortName ?? place.name ?? 'Ort';
+            const isOutOfBounds = position.isOutOfBounds;
 
             return (
               <div
@@ -139,13 +158,14 @@ const MapView = ({ places = [], onPlaceSelect = () => {}, loading = false }) => 
                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap z-20 pointer-events-none"
                   >
                     {placeName}
+                    {isOutOfBounds && <span className="ml-1 text-yellow-300">(außerhalb)</span>}
                   </div>
                 )}
                 <button
                   type="button"
                   className={`-translate-x-1/2 -translate-y-full transition-all duration-200 ${
                     isHovered ? 'scale-125 z-10' : 'scale-100'
-                  }`}
+                  } ${isOutOfBounds ? 'opacity-60' : ''}`}
                   onMouseEnter={() => setHoveredPlace(place.id)}
                   onMouseLeave={() => setHoveredPlace(null)}
                   onClick={() => onPlaceSelect(place)}

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { listMyOrganizations, listAllOrganizations } from '../../api/organizations';
 import { HelpSection } from '../../components/HelpTooltip';
 import ImageUpload from '../../components/ImageUpload';
+import { isWithinMoabitBounds } from '../../components/MapView';
 
 const EditorPlaceCreatePage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ const EditorPlaceCreatePage = () => {
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeResult, setGeocodeResult] = useState(null);
   const [noOrgsWarning, setNoOrgsWarning] = useState(false);
 
   useEffect(() => {
@@ -279,7 +282,100 @@ const EditorPlaceCreatePage = () => {
             <Field label="Breitengrad (lat)" type="number" step="0.000001" value={form.coordinates.lat} onChange={(v) => handleChange('coordinates.lat', v)} />
             <Field label="Längengrad (lon)" type="number" step="0.000001" value={form.coordinates.lon} onChange={(v) => handleChange('coordinates.lon', v)} />
           </div>
-          <p className="text-xs text-gray-500">Hinweis: Im Backend werden Koordinaten als [lon, lat] gespeichert.</p>
+          
+          {/* Geocoding button */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!form.address.street || !form.address.postalCode) {
+                  setError('Bitte zuerst Straße und PLZ ausfüllen.');
+                  return;
+                }
+                setGeocoding(true);
+                setGeocodeResult(null);
+                setError('');
+                try {
+                  const addressParts = [
+                    form.address.street,
+                    form.address.number,
+                    form.address.postalCode,
+                    form.address.city || 'Berlin',
+                    'Germany'
+                  ].filter(Boolean);
+                  const query = encodeURIComponent(addressParts.join(', '));
+                  const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`,
+                    { headers: { 'Accept-Language': 'de' } }
+                  );
+                  const data = await response.json();
+                  if (data && data.length > 0) {
+                    const { lat, lon, display_name } = data[0];
+                    const parsedLat = parseFloat(lat);
+                    const parsedLon = parseFloat(lon);
+                    setGeocodeResult({ lat: parsedLat, lon: parsedLon, displayName: display_name });
+                  } else {
+                    setError('Adresse konnte nicht gefunden werden. Bitte Koordinaten manuell eingeben.');
+                  }
+                } catch (err) {
+                  setError('Geocoding fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+                } finally {
+                  setGeocoding(false);
+                }
+              }}
+              disabled={geocoding || !form.address.street}
+              className="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            >
+              {geocoding ? 'Suche läuft…' : '📍 Koordinaten aus Adresse ermitteln'}
+            </button>
+            {geocodeResult && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  Gefunden: {geocodeResult.lat.toFixed(6)}, {geocodeResult.lon.toFixed(6)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      coordinates: { lat: geocodeResult.lat, lon: geocodeResult.lon }
+                    }));
+                    setGeocodeResult(null);
+                  }}
+                  className="rounded-md bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                >
+                  Übernehmen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGeocodeResult(null)}
+                  className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Verwerfen
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Coordinate validation warning */}
+          {form.coordinates.lat && form.coordinates.lon && (
+            (() => {
+              const lat = parseFloat(form.coordinates.lat);
+              const lon = parseFloat(form.coordinates.lon);
+              if (!isNaN(lat) && !isNaN(lon)) {
+                if (!isWithinMoabitBounds(lat, lon)) {
+                  return (
+                    <div className="rounded-md border border-yellow-200 bg-yellow-50 p-2 text-sm text-yellow-800">
+                      ⚠️ Die Koordinaten liegen außerhalb des Moabit-Kartenbereichs. Der Ort wird am Rand der Karte angezeigt oder ist nicht sichtbar.
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()
+          )}
+          
+          <p className="text-xs text-gray-500">Hinweis: Im Backend werden Koordinaten als [lon, lat] gespeichert. Die Koordinaten werden für die Kartenanzeige verwendet.</p>
         </div>
 
         <div className="flex items-center justify-end gap-3">
