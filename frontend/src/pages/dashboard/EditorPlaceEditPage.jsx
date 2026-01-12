@@ -30,6 +30,10 @@ const EditorPlaceEditPage = () => {
         if (mounted) {
           // Normalize API shape to local form structure
           const coords = Array.isArray(doc.coordinates) ? doc.coordinates : [];
+          // Extract organization IDs from the document
+          const orgIds = Array.isArray(doc.organizations)
+            ? doc.organizations.map((org) => (typeof org === 'object' && org?.id) ? org.id : org).filter(Boolean)
+            : [];
           setForm({
             name: doc.name || '',
             shortName: doc.shortName || '',
@@ -44,7 +48,7 @@ const EditorPlaceEditPage = () => {
             mapPosition: { x: doc.mapPosition?.x ?? '', y: doc.mapPosition?.y ?? '' },
             coordinates: { lat: typeof coords[1] === 'number' ? coords[1] : '', lon: typeof coords[0] === 'number' ? coords[0] : '' },
             openingHours: doc.openingHours || '',
-            owner: (typeof doc.owner === 'object' && doc.owner?.id) ? doc.owner.id : (doc.owner || ''),
+            organizations: orgIds,
           });
         }
       } catch (err) {
@@ -153,8 +157,9 @@ const EditorPlaceEditPage = () => {
         if (!Number.isNaN(lat) && !Number.isNaN(lon)) payload.coordinates = [lon, lat];
       }
 
-      if ((user?.role === 'admin' || organizations.length > 1) && form.owner) {
-        payload.owner = form.owner;
+      // Admin can update organizations, send as array
+      if (user?.role === 'admin' && form.organizations && form.organizations.length > 0) {
+        payload.organizations = form.organizations;
       }
       await updateLocation(id, payload);
       navigate('/dashboard/editor/places', { replace: true, state: { message: 'Ort aktualisiert.' } });
@@ -166,7 +171,9 @@ const EditorPlaceEditPage = () => {
   };
 
   const myOrgIds = (organizations || []).map((o) => o.id);
-  const canDelete = user?.role === 'admin' || (form?.owner && myOrgIds.includes(form.owner));
+  const formOrgIds = form?.organizations || [];
+  const hasMatchingOrg = formOrgIds.some((orgId) => myOrgIds.includes(orgId));
+  const canDelete = user?.role === 'admin' || hasMatchingOrg;
 
   const handleDelete = async () => {
     if (!canDelete) return;
@@ -202,12 +209,12 @@ const EditorPlaceEditPage = () => {
           <Field label="Voller Name des Ortes" required value={form.name} onChange={(v) => handleChange('name', v)} />
           <Field label="Kurzform des Ortsnamens" required value={form.shortName} onChange={(v) => handleChange('shortName', v)} maxLength={40} />
         </div>
-        {(user?.role === 'admin' || organizations.length > 1) ? (
-          <Select
-            label="Besitzende Organisation"
-            value={form.owner}
-            onChange={(v) => handleChange('owner', v)}
-            placeholder={loadingOrgs ? 'Lade Organisationen …' : 'Organisation wählen'}
+        {user?.role === 'admin' ? (
+          <MultiSelect
+            label="Organisationen (welche Orgs können diesen Ort nutzen)"
+            selectedValues={form.organizations || []}
+            onChange={(values) => handleChange('organizations', values)}
+            placeholder={loadingOrgs ? 'Lade Organisationen …' : 'Organisationen wählen'}
             options={organizations.map((o) => ({ value: o.id, label: o.name }))}
           />
         ) : null}
@@ -219,8 +226,14 @@ const EditorPlaceEditPage = () => {
           value={form.image}
           onChange={(v) => handleChange('image', v)}
           organizations={organizations}
-          selectedOrg={form.owner}
-          onOrgChange={(orgId) => handleChange('owner', orgId)}
+          selectedOrg={form.organizations?.[0] || ''}
+          onOrgChange={(orgId) => {
+            // When org changes for image upload, ensure it's in the organizations array
+            const currentOrgs = form.organizations || [];
+            if (orgId && !currentOrgs.includes(orgId)) {
+              handleChange('organizations', [orgId, ...currentOrgs]);
+            }
+          }}
           existingMedia={media}
           showExistingPicker={true}
           showUpload={true}
@@ -276,7 +289,7 @@ const EditorPlaceEditPage = () => {
           </button>
         </div>
       </form>
-      <p className="text-xs text-gray-500">Weitere Optionen im <a href="/admin/collections/locations" className="text-[#7CB92C] hover:underline" target="_blank" rel="noopener noreferrer">Admin‑Bereich</a>.</p>
+      <p className="text-xs text-gray-500">Weitere Optionen im <a href={buildApiUrl('/admin/collections/locations')} className="text-[#7CB92C] hover:underline" target="_blank" rel="noopener noreferrer">Admin‑Bereich</a>.</p>
     </div>
   );
 };
@@ -326,5 +339,41 @@ const Select = ({ label, value, onChange, options = [], placeholder }) => (
     </select>
   </label>
 );
+
+const MultiSelect = ({ label, selectedValues = [], onChange, options = [], placeholder }) => {
+  const handleCheckboxChange = (value, checked) => {
+    if (checked) {
+      onChange([...selectedValues, value]);
+    } else {
+      onChange(selectedValues.filter((v) => v !== value));
+    }
+  };
+
+  return (
+    <div className="flex flex-col text-sm font-medium text-gray-700">
+      <span className="mb-2">{label}</span>
+      {options.length === 0 ? (
+        <p className="text-gray-500 italic">{placeholder || 'Keine Optionen verfügbar'}</p>
+      ) : (
+        <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-white">
+          {options.map((opt) => (
+            <label key={opt.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <input
+                type="checkbox"
+                checked={selectedValues.includes(opt.value)}
+                onChange={(e) => handleCheckboxChange(opt.value, e.target.checked)}
+                className="rounded border-gray-300 text-[#7CB92C] focus:ring-[#7CB92C]"
+              />
+              <span className="text-gray-900">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      {selectedValues.length > 0 && (
+        <p className="mt-1 text-xs text-gray-500">{selectedValues.length} Organisation(en) ausgewählt</p>
+      )}
+    </div>
+  );
+};
 
 export default EditorPlaceEditPage;

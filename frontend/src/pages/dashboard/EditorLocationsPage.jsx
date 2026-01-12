@@ -144,7 +144,7 @@ const EditorLocationsPage = () => {
                       )}
                       {user?.role === 'admin' && (
                         <a
-                          href={`/admin/collections/locations/${location.id}`}
+                          href={buildApiUrl(`/admin/collections/locations/${location.id}`)}
                           className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                           target="_blank" rel="noopener noreferrer"
                         >
