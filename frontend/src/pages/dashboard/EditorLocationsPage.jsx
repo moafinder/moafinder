@@ -18,7 +18,8 @@ const EditorLocationsPage = () => {
       setLoading(true);
       setError('');
       try {
-        const data = await listLocations({ limit: 500 });
+        // Include depth=1 to populate organization names
+        const data = await listLocations({ limit: 500, depth: 1 });
         if (mounted) setLocations(Array.isArray(data.docs) ? data.docs : []);
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : 'Orte konnten nicht geladen werden');
@@ -65,8 +66,12 @@ const EditorLocationsPage = () => {
   const handleDelete = async (id) => {
     const myOrgIds = organizations.map((o) => o.id);
     const target = locations.find((l) => l.id === id);
-    const isOwner = target?.owner && myOrgIds.includes(typeof target.owner === 'object' ? target.owner.id : target.owner);
-    if (!(user?.role === 'admin' || isOwner)) return;
+    // Check if user's org is in location's organizations array
+    const locationOrgIds = Array.isArray(target?.organizations)
+      ? target.organizations.map((org) => typeof org === 'object' ? org?.id : org).filter(Boolean)
+      : [];
+    const hasAccess = locationOrgIds.some((orgId) => myOrgIds.includes(orgId));
+    if (!(user?.role === 'admin' || hasAccess)) return;
     if (!window.confirm('Diesen Ort wirklich löschen?')) return;
     try {
       await deleteLocation(id);
@@ -120,9 +125,12 @@ const EditorLocationsPage = () => {
                 </div>
                 {(() => {
                   const myOrgIds = organizations.map((o) => o.id)
-                  const ownerId = typeof location.owner === 'object' ? location.owner?.id : location.owner
-                  const isOwner = ownerId && myOrgIds.includes(ownerId)
-                  const canEdit = user?.role === 'admin' || isOwner
+                  // Check if user's org is in location's organizations array
+                  const locationOrgIds = Array.isArray(location.organizations)
+                    ? location.organizations.map((org) => typeof org === 'object' ? org?.id : org).filter(Boolean)
+                    : []
+                  const hasAccess = locationOrgIds.some((orgId) => myOrgIds.includes(orgId))
+                  const canEdit = user?.role === 'admin' || hasAccess
                   return (
                     <div className="ml-auto flex flex-wrap items-start gap-2">
                       {canEdit && (
@@ -133,7 +141,7 @@ const EditorLocationsPage = () => {
                           Bearbeiten
                         </a>
                       )}
-                      {(user?.role === 'admin' || isOwner) && (
+                      {(user?.role === 'admin' || hasAccess) && (
                         <button
                           type="button"
                           onClick={() => handleDelete(location.id)}
@@ -155,6 +163,29 @@ const EditorLocationsPage = () => {
                   )
                 })()}
               </div>
+              
+              {/* Show assigned organizations */}
+              {(() => {
+                const locationOrgs = Array.isArray(location.organizations) ? location.organizations : [];
+                if (locationOrgs.length === 0) return null;
+                return (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {locationOrgs.map((org) => {
+                      const orgName = typeof org === 'object' ? org?.name : null;
+                      const orgId = typeof org === 'object' ? org?.id : org;
+                      return (
+                        <span
+                          key={orgId}
+                          className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800"
+                        >
+                          {orgName || 'Org'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              
               <p className="mt-2 text-sm text-gray-700 whitespace-pre-line break-words">{location.description ?? 'Keine Beschreibung hinterlegt.'}</p>
               {location.address && (
                 <p className="mt-2 text-sm text-gray-600 break-words">

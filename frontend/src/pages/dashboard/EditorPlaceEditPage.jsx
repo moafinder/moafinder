@@ -78,17 +78,10 @@ const EditorPlaceEditPage = () => {
     async function loadOrganizations() {
       setLoadingOrgs(true);
       try {
-        let qs = '';
-        if (user?.role === 'admin') {
-          qs = new URLSearchParams({ limit: '200', sort: 'name' }).toString();
-        } else if (user?.id) {
-          const params = new URLSearchParams();
-          if (user.organization) params.append('where[id][equals]', user.organization);
-          params.append('or[0][owner][equals]', user.id);
-          params.set('limit', '50');
-          qs = params.toString();
-        }
-        const url = qs ? `/api/organizations?${qs}` : '/api/organizations?limit=0';
+        // Load all organizations for display purposes (names in read-only view)
+        // Admins can edit, others just see the list
+        const qs = new URLSearchParams({ limit: '200', sort: 'name' }).toString();
+        const url = `/api/organizations?${qs}`;
         const res = await fetch(buildApiUrl(url), { credentials: 'include', headers: withAuthHeaders() });
         const data = await res.json();
         if (mounted) setOrganizations(Array.isArray(data?.docs) ? data.docs : []);
@@ -212,6 +205,8 @@ const EditorPlaceEditPage = () => {
           <Field label="Voller Name des Ortes" required value={form.name} onChange={(v) => handleChange('name', v)} />
           <Field label="Kurzform des Ortsnamens" required value={form.shortName} onChange={(v) => handleChange('shortName', v)} maxLength={40} />
         </div>
+        
+        {/* Organization assignment - editable for admin, read-only for others */}
         {user?.role === 'admin' ? (
           <MultiSelect
             label="Organisationen (welche Orgs können diesen Ort nutzen)"
@@ -220,7 +215,31 @@ const EditorPlaceEditPage = () => {
             placeholder={loadingOrgs ? 'Lade Organisationen …' : 'Organisationen wählen'}
             options={organizations.map((o) => ({ value: o.id, label: o.name }))}
           />
-        ) : null}
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Zugeordnete Organisationen</p>
+            {loadingOrgs ? (
+              <p className="text-sm text-gray-500">Lade…</p>
+            ) : form.organizations && form.organizations.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {form.organizations.map((orgId) => {
+                  const org = organizations.find((o) => o.id === orgId);
+                  return (
+                    <span
+                      key={orgId}
+                      className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                    >
+                      {org?.name || orgId}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Keine Organisation zugeordnet</p>
+            )}
+            <p className="text-xs text-gray-500">Nur Admins können die Organisationszuordnung ändern.</p>
+          </div>
+        )}
 
         <Textarea label="Beschreibung (max. 1000 Zeichen)" rows={4} value={form.description} onChange={(v) => handleChange('description', v)} maxLength={1000} />
 
