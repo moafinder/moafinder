@@ -159,6 +159,18 @@ See the [Collections](https://payloadcms.com/docs/configuration/collections) doc
 - #### Media
 
   This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+  
+  **Storage Configuration:**
+  - **Development**: Files stored locally in `./uploads` directory
+  - **Production**: Files stored in AWS S3 (see [S3 Media Storage](#s3-media-storage-required-for-production))
+  
+  **Security Features:**
+  - Only authenticated users with organization membership can upload
+  - Uploads restricted to image MIME types (`image/*`)
+  - File size validation (max 5MB on frontend)
+  - Each image is linked to an organization—only members can modify/delete
+  - Images auto-processed into multiple sizes: thumbnail (400x300), card (768x1024), tablet (1024px wide)
+  - Alt text required for accessibility compliance
 
 ### Docker
 
@@ -206,6 +218,78 @@ To deploy the backend to AWS App Runner:
 cd backend
 ./deploy_apprunner.sh
 ```
+
+### S3 Media Storage (Required for Production)
+
+AWS App Runner containers are ephemeral—uploaded files stored on the local filesystem are **lost** when the container restarts, scales, or redeploys. To persist media files, configure S3 storage:
+
+#### 1. Create an S3 Bucket
+
+```bash
+aws s3 mb s3://your-bucket-name --region eu-central-1
+```
+
+#### 2. Configure Bucket Policy for Public Read
+
+Media files need to be publicly accessible. Add this bucket policy:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        }
+    ]
+}
+```
+
+#### 3. Configure CORS on the Bucket
+
+```json
+[
+    {
+        "AllowedHeaders": ["*"],
+        "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+        "AllowedOrigins": ["https://your-app.apprunner.aws", "https://your-domain.com"],
+        "ExposeHeaders": ["ETag"]
+    }
+]
+```
+
+#### 4. Create IAM User with S3 Permissions
+
+Create an IAM policy with these permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::your-bucket-name", "arn:aws:s3:::your-bucket-name/*"]
+        }
+    ]
+}
+```
+
+#### 5. Set Environment Variables
+
+Add these to your App Runner service configuration:
+
+| Variable | Description |
+| --- | --- |
+| `S3_BUCKET` | Your S3 bucket name |
+| `S3_ACCESS_KEY_ID` | IAM user access key |
+| `S3_SECRET_ACCESS_KEY` | IAM user secret key |
+| `S3_REGION` | AWS region (default: `eu-central-1`) |
+
+When these variables are set, the backend automatically uses S3 for media storage. Without them, files are stored locally (suitable for development only).
 
 ### AWS Profile Configuration
 

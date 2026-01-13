@@ -1,4 +1,4 @@
-import { buildConfig } from 'payload'
+import { buildConfig, Plugin } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import type { Payload } from 'payload'
@@ -17,6 +17,7 @@ import { slugify } from './utils/slugify'
 import sharp from 'sharp'
 import nodemailer from 'nodemailer'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
+import { s3Storage } from '@payloadcms/storage-s3'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -64,9 +65,35 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+// Configure S3 storage plugin for production (when S3 env vars are set)
+const plugins: Plugin[] = []
+if (process.env.S3_BUCKET && process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY) {
+  plugins.push(
+    s3Storage({
+      collections: {
+        media: {
+          prefix: 'media',
+        },
+      },
+      bucket: process.env.S3_BUCKET,
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID,
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+        },
+        region: process.env.S3_REGION || 'eu-central-1',
+      },
+    })
+  )
+  console.log('[Payload] S3 storage enabled for media collection')
+} else if (process.env.NODE_ENV === 'production') {
+  console.warn('[Payload] WARNING: S3 storage not configured. Media files will be stored locally and may be lost on container restart.')
+}
+
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET as string,
   sharp,
+  plugins,
   db: mongooseAdapter({
     url: process.env.DATABASE_URI as string,
   }),
