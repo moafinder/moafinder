@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getLocation } from '../api/locations';
 import { listEvents } from '../api/events';
 import { adaptEvent, adaptLocation } from '../utils/dataAdapters';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 /**
  * Detailed page for a specific place. Displays full information
@@ -125,16 +126,14 @@ const PlaceProfile = () => {
     <div className="container mx-auto px-4 py-6">
       <Link to="/orte" className="text-[#7CB92C] hover:underline">← Zurück zur Übersicht</Link>
       <div className="mt-4 grid gap-6 md:grid-cols-2">
-        {place.image?.url && (
-          <div>
-            {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
-            <img
-              src={place.image.url}
-              alt={place.image.alt ?? place.name}
-              className="w-full h-64 md:h-80 object-cover rounded-lg shadow"
-            />
-          </div>
-        )}
+        <div className="rounded-lg shadow overflow-hidden">
+          <ImageWithFallback
+            src={place.image?.url}
+            alt={place.image?.alt ?? place.name}
+            className="w-full h-64 md:h-80"
+            showPlaceholderIndicator={!place.image?.url}
+          />
+        </div>
         <div>
           <h1 className="text-3xl font-bold mb-2">{place.name}</h1>
           {place.shortName && place.shortName !== place.name && (
@@ -211,6 +210,9 @@ const PlaceProfile = () => {
                     {event.timeLabel ? ` · ${event.timeLabel}` : ''}
                   </p>
                   <p className="text-lg font-semibold text-gray-800">{event.title}</p>
+                  {event.organizer?.name && (
+                    <p className="text-xs text-gray-500">von {event.organizer.name}</p>
+                  )}
                   {event.excerpt && <p className="text-sm text-gray-600">{event.excerpt}</p>}
                 </Link>
               </li>

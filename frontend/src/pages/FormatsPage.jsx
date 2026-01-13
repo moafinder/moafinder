@@ -4,6 +4,7 @@ import FilterBar from '../components/FilterBar';
 import headerGraphic from '../assets/header_grafik_klein.png';
 import { listEvents } from '../api/events';
 import { adaptEvent, buildEventFilterOptions } from '../utils/dataAdapters';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const initialFilters = {
   ageGroups: [],
@@ -176,20 +177,13 @@ const FormatsPage = () => {
   const renderEventCard = (event) => (
     <Link to={`/event/${event.id}`} key={event.id} className="block">
       <div className="flex border-b py-4 hover:bg-gray-50 transition-colors">
-        <div className="w-1/5 h-24 md:h-28 flex-shrink-0">
-          {event.image?.url ? (
-            <img
-              src={event.image.url}
-              alt={event.image.alt ?? event.title}
-              className="w-full h-full object-cover rounded"
-            />
-          ) : (
-            <div
-              className="h-full w-full rounded"
-              style={{ backgroundColor: event.colorHex }}
-              aria-hidden="true"
-            />
-          )}
+        <div className="w-1/5 h-24 md:h-28 flex-shrink-0 rounded overflow-hidden">
+          <ImageWithFallback
+            src={event.image?.url}
+            alt={event.image?.alt ?? event.title}
+            className="h-full w-full"
+            showPlaceholderIndicator={!event.image?.url}
+          />
         </div>
         <div className="w-4/5 pl-4">
           <p className="text-sm text-gray-600">
@@ -208,6 +202,9 @@ const FormatsPage = () => {
             {event.location?.shortName ?? event.location?.name ?? 'Ort folgt'}
           </h3>
           <p className="text-sm font-semibold text-gray-800 mb-1">{event.title}</p>
+          {event.organizer?.name && (
+            <p className="text-xs text-gray-500 mb-1">von {event.organizer.name}</p>
+          )}
           {event.excerpt && <p className="text-sm text-gray-600">{event.excerpt}</p>}
           <div className="mt-2 flex flex-wrap gap-2">
             {event.targetTags?.map((tag) => (

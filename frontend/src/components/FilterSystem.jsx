@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { EVENTS } from '../data/mockData';
+import ImageWithFallback from './ImageWithFallback';
 
 // Filter System Component
 const FilterSystem = ({ onFiltersChange }) => {
@@ -366,10 +367,13 @@ const EventsPage = () => {
   const renderEventCard = (event) => (
     <Link to={`/event/${event.id}`} key={event.id} className="block">
       <div className="flex border-b py-4 hover:bg-gray-50 transition-colors">
-        <div className={`w-1/5 h-24 md:h-28 flex-shrink-0 ${event.color}`}>
-          {event.image && (
-            <img src={event.image} alt="" className="w-full h-full object-cover" />
-          )}
+        <div className={`w-1/5 h-24 md:h-28 flex-shrink-0 rounded overflow-hidden ${!event.image ? event.color : ''}`}>
+          <ImageWithFallback
+            src={event.image}
+            alt={event.title}
+            className="h-full w-full"
+            showPlaceholderIndicator={!event.image}
+          />
         </div>
         <div className="w-4/5 pl-4">
           <div className="flex items-center gap-2 mb-1">

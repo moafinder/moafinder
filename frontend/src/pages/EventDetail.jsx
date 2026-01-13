@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getEvent, listEvents } from '../api/events';
 import { adaptEvent } from '../utils/dataAdapters';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -227,17 +228,14 @@ const EventDetail = () => {
         </div>
       </header>
 
-      {event.image?.url && (
-        <div className="w-full rounded-lg bg-gray-100 shadow">
-          <div className="flex h-72 w-full items-center justify-center md:h-96">
-            <img
-              src={event.image.url}
-              alt={event.image.alt ?? event.title}
-              className="max-h-full w-auto max-w-full object-contain"
-            />
-          </div>
-        </div>
-      )}
+      <div className="w-full rounded-lg bg-gray-100 shadow overflow-hidden">
+        <ImageWithFallback
+          src={event.image?.url}
+          alt={event.image?.alt ?? event.title}
+          className="h-72 w-full md:h-96"
+          showPlaceholderIndicator={!event.image?.url}
+        />
+      </div>
 
       <section className="grid gap-8 lg:grid-cols-3">
         <article className="lg:col-span-2 space-y-6">

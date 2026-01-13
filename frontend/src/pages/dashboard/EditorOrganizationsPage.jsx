@@ -3,6 +3,7 @@ import { buildApiUrl } from '../../api/baseUrl';
 import { withAuthHeaders } from '../../utils/authHeaders';
 import { HelpSection } from '../../components/HelpTooltip';
 import { handleMembershipRequest } from '../../api/organizations';
+import ImageWithFallback from '../../components/ImageWithFallback';
 
 const statusOptions = [
   { value: 'all', label: 'Alle' },
@@ -263,11 +264,15 @@ const EditorOrganizationsPage = () => {
           {filtered.map((org) => (
             <article key={org.id} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-3">
-                {org.logo?.url ? (
-                  <img src={org.logo.url} alt={org.logo.alt || org.name} className="h-16 w-16 rounded-md object-contain" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-500">Logo</div>
-                )}
+                <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                  <ImageWithFallback
+                    src={org.logo?.url}
+                    alt={org.logo?.alt || org.name}
+                    className="h-full w-full"
+                    showPlaceholderIndicator={!org.logo?.url}
+                    placeholderLabel="Logo"
+                  />
+                </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">{org.name ?? 'Ohne Namen'}</h2>
                   <p className="text-sm text-gray-600">{org.address?.street ? `${org.address.street} ${org.address.number ?? ''}, ${org.address.postalCode ?? ''} ${org.address.city ?? ''}` : 'Adresse folgt'}</p>
