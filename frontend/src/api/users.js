@@ -35,3 +35,9 @@ export async function updateUser(id, data) {
     body: JSON.stringify(data),
   });
 }
+
+export async function deleteUser(id) {
+  return request(`${API_URL}/${id}`, {
+    method: 'DELETE',
+  });
+}

@@ -83,7 +83,7 @@ const OrganizerLocationsPage = () => {
               subtitle={location.shortName}
               meta={
                 location.address
-                  ? `${location.address.street ?? ''} ${location.address.number ?? ''}, ${
+                  ? `${location.address.street ?? ''} ${location.address.number ?? ''}${location.address.supplement ? ` (${location.address.supplement})` : ''}, ${
                       location.address.postalCode ?? ''
                     } ${location.address.city ?? ''}`
                   : null

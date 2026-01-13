@@ -189,7 +189,7 @@ const EditorLocationsPage = () => {
               <p className="mt-2 text-sm text-gray-700 whitespace-pre-line break-words">{location.description ?? 'Keine Beschreibung hinterlegt.'}</p>
               {location.address && (
                 <p className="mt-2 text-sm text-gray-600 break-words">
-                  {location.address.street} {location.address.number}, {location.address.postalCode} {location.address.city}
+                  {location.address.street} {location.address.number}{location.address.supplement ? ` (${location.address.supplement})` : ''}, {location.address.postalCode} {location.address.city}
                 </p>
               )}
             </article>

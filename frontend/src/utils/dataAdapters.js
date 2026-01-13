@@ -52,7 +52,11 @@ export function adaptLocation(doc) {
       : null;
 
   const addr = address && typeof address === 'object' ? address : {};
-  const addressLine = [addr.street, addr.number].filter(Boolean).join(' ');
+  const addressParts = [addr.street, addr.number].filter(Boolean);
+  if (addr.supplement) {
+    addressParts.push(`(${addr.supplement})`);
+  }
+  const addressLine = addressParts.join(' ');
   const cityLine = [addr.postalCode, addr.city].filter(Boolean).join(' ');
 
   let latitude = null;

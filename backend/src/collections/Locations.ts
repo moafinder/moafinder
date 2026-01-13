@@ -163,6 +163,14 @@ const Locations: CollectionConfig = {
       fields: [
         { name: 'street', type: 'text', required: true, label: 'Straße' },
         { name: 'number', type: 'text', required: true, label: 'Hausnummer' },
+        {
+          name: 'supplement',
+          type: 'text',
+          label: 'Adresszusatz',
+          admin: {
+            description: 'Zusätzliche Angaben zur Adresse (z.B. Hinterhaus, 2. OG, Raum 101). Wird nicht für die Koordinatensuche verwendet.',
+          },
+        },
         { name: 'postalCode', type: 'text', required: true, label: 'PLZ' },
         { name: 'city', type: 'text', defaultValue: 'Berlin', label: 'Stadt' },
       ],

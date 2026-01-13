@@ -17,7 +17,7 @@ const EditorPlaceCreatePage = () => {
     shortName: '',
     description: '',
     image: '',
-    address: { street: '', number: '', postalCode: '', city: 'Berlin' },
+    address: { street: '', number: '', supplement: '', postalCode: '', city: 'Berlin' },
     mapPosition: { x: '', y: '' },
     coordinates: { lat: '', lon: '' },
     openingHours: '',
@@ -127,6 +127,7 @@ const EditorPlaceCreatePage = () => {
         address: {
           street: form.address.street,
           number: form.address.number,
+          supplement: form.address.supplement || undefined,
           postalCode: form.address.postalCode,
           city: form.address.city || 'Berlin',
         },
@@ -263,6 +264,15 @@ const EditorPlaceCreatePage = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Straße" required value={form.address.street} onChange={(v) => handleChange('address.street', v)} />
             <Field label="Hausnummer" required value={form.address.number} onChange={(v) => handleChange('address.number', v)} />
+          </div>
+          <Field 
+            label="Adresszusatz (optional)" 
+            value={form.address.supplement} 
+            onChange={(v) => handleChange('address.supplement', v)} 
+            placeholder="z.B. Hinterhaus, 2. OG, Raum 101"
+          />
+          <p className="text-xs text-gray-500">Zusätzliche Angaben zur Adresse, die nicht für die Koordinatensuche verwendet werden.</p>
+          <div className="grid gap-4 md:grid-cols-2">
             <Field label="PLZ" required value={form.address.postalCode} onChange={(v) => handleChange('address.postalCode', v)} />
             <Field label="Ort" required value={form.address.city} onChange={(v) => handleChange('address.city', v)} />
           </div>
