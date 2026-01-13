@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getLocation, updateLocation, deleteLocation } from '../../api/locations';
 import { useAuth } from '../../context/AuthContext';
@@ -99,6 +99,17 @@ const EditorPlaceEditPage = () => {
       mounted = false;
     };
   }, [id, user]);
+
+  // Filter media to show those belonging to user's organizations
+  const filteredMedia = useMemo(() => {
+    if (user?.role === 'admin') return media;
+    const orgIds = organizations.map((o) => o.id);
+    if (orgIds.length === 0) return [];
+    return media.filter((item) => {
+      const itemOrgId = typeof item.organization === 'object' ? item.organization?.id : item.organization;
+      return orgIds.includes(itemOrgId);
+    });
+  }, [media, organizations, user?.role]);
 
   const handleChange = (path, value) => {
     if (!form) return;
@@ -258,7 +269,7 @@ const EditorPlaceEditPage = () => {
               handleChange('organizations', [orgId, ...currentOrgs]);
             }
           }}
-          existingMedia={media}
+          existingMedia={filteredMedia}
           showExistingPicker={true}
           showUpload={true}
           aspectRatio="16/9"
@@ -267,6 +278,9 @@ const EditorPlaceEditPage = () => {
             setMedia((prev) => [newMedia, ...prev]);
           }}
         />
+        <p className="text-xs text-gray-500 -mt-2">
+          Weitere Bilder kannst du unter <Link to="/dashboard/editor/media" className="text-[#7CB92C] hover:underline">Event-Bilder</Link> hochladen.
+        </p>
 
         <Field label="Öffnungszeiten (optional)" value={form.openingHours} onChange={(v) => handleChange('openingHours', v)} />
 

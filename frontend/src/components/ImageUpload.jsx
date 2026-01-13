@@ -386,19 +386,46 @@ const ImageUpload = ({
               )}
             </div>
           ) : (
-            <select
-              value={value || ''}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={disabled}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-[#7CB92C] focus:outline-none focus:ring-2 focus:ring-[#C6E3A0] disabled:opacity-50"
-            >
-              <option value="">Bild auswählen …</option>
-              {existingMedia.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.alt || item.filename || 'Ohne Beschreibung'}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-3">
+              {/* Grid view for media library */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto p-1">
+                {existingMedia.map((item) => {
+                  const thumbUrl = resolveMediaUrl(item.sizes?.thumbnail?.url || item.url);
+                  const orgName = typeof item.organization === 'object' ? item.organization?.name : null;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onChange(item.id)}
+                      disabled={disabled}
+                      className="group relative aspect-square overflow-hidden rounded-lg border-2 border-transparent hover:border-[#7CB92C] focus:border-[#7CB92C] focus:outline-none disabled:opacity-50 transition-colors"
+                      title={item.alt || item.filename || 'Ohne Beschreibung'}
+                    >
+                      {thumbUrl ? (
+                        <img
+                          src={thumbUrl}
+                          alt={item.alt || ''}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                          Bild
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                      {orgName && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
+                          <p className="text-[10px] text-white truncate">{orgName}</p>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-500">
+                Klicke auf ein Bild, um es auszuwählen. {existingMedia.length} Bilder verfügbar.
+              </p>
+            </div>
           )}
         </div>
       )}

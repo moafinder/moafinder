@@ -684,6 +684,9 @@ const OrganizerEventForm = ({ initialEvent = null, onSubmit }) => {
                 setMedia((prev) => [newMedia, ...prev]);
               }}
             />
+            <p className="text-xs text-gray-500 -mt-2">
+              Weitere Bilder kannst du unter <a href="/dashboard/media" className="text-[#7CB92C] hover:underline">Event-Bilder</a> hochladen.
+            </p>
           </div>
         )}
       </section>
